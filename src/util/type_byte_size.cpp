@@ -16,7 +16,6 @@
 BigInt member_offset(const type2tc &type, const irep_idt &member)
 {
   return member_offset_bits(type, member) / 8;
-  //return (bits + 7) / 8;
 }
 
 BigInt member_offset_bits(const type2tc &type, const irep_idt &member)
