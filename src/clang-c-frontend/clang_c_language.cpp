@@ -157,6 +157,9 @@ void clang_c_languaget::build_compiler_args(const std::string &&tmp_dir)
   // Ignore ctype defined by the system
   compiler_args.emplace_back("-D__NO_CTYPE");
 
+  // Ignore ctype defined by the system
+  compiler_args.emplace_back("-D__ESBMC_alloca=__builtin_alloca");
+
 #ifdef __APPLE__
   compiler_args.push_back("-D_EXTERNALIZE_CTYPE_INLINES_");
   compiler_args.push_back("-D_SECURE__STRING_H_");
