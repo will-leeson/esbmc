@@ -2064,7 +2064,7 @@ void dereferencet::check_code_access(
   }
 
   // As for setting the 'value', it's currently already set to the base code
-  // object. There's nothing we can actually change it to to mean anything, so
+  // object. There's nothing we can actually change it to mean anything, so
   // don't fiddle with it.
 }
 
