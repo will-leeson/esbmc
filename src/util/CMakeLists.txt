@@ -1,4 +1,8 @@
 add_library(algorithms algorithms.cpp)
+# Boost is needed by anything that touches irep2
+target_include_directories(algorithms
+    PRIVATE ${Boost_INCLUDE_DIRS}
+)
 
 add_library(util_esbmc irep2.cpp
     arith_tools.cpp base_type.cpp cmdline.cpp config.cpp context.cpp
