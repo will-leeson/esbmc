@@ -89,7 +89,7 @@ jobs:
     - name: vcpkg integrate
       run: vcpkg.exe integrate install
     - name: Install Boost
-      run: vcpkg.exe install boost-filesystem:x64-Windows boost-date-time:x64-windows boost-test:x64-windows boost-multi-index:x64-windows boost-crc:x64-windows boost-property-tree:x64-windows boost-uuid:x64-windows
+      run: vcpkg.exe install boost-filesystem:x64-Windows boost-date-time:x64-windows boost-test:x64-windows boost-multi-index:x64-windows boost-crc:x64-windows boost-property-tree:x64-windows boost-uuid:x64-windows boost-program-options:x64-windows
     - name: Install Bison/Flex
       run: choco install -y winflexbison
     - name: Prepare Environment
@@ -102,7 +102,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake.exe .. -A x64 -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DENABLE_REGRESSION=On -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLLVM_DIR=C:/deps/clang/clang -DClang_DIR=C:/deps/clang/clang -DZ3_DIR=C:/deps/z3-4.8.9-x64-win -DBOOST_DLL_FILE=C:/deps/boost_filesystem-vc142-mt-x64-1_75.dll
+        cmake.exe .. -A x64 -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DENABLE_REGRESSION=On -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLLVM_DIR=C:/deps/clang/clang -DClang_DIR=C:/deps/clang/clang -DZ3_DIR=C:/deps/z3-4.8.9-x64-win -DBOOST_DLL_FILE="C:/deps/boost_filesystem-vc142-mt-x64-1_75.dll;C:/deps/boost_program_options-vc142-mt-x64-1_75.dll"
     - name: Build ESBMC
       run: |
         cd build
