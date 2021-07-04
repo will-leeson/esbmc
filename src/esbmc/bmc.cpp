@@ -122,7 +122,7 @@ void bmct::error_trace(
   std::string output_file = options.get_option("file-output");
   if(output_file != "") {
     std::ofstream out(output_file);
-    show_goto_trace(out, ns, goto_trace);
+    show_goto_trace(out, ns, goto_trace, msg);
   }
   std::string witness_output = options.get_option("witness-output");
   if(witness_output != "")

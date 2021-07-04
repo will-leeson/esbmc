@@ -18,7 +18,7 @@
 #include <goto-programs/goto_functions.h>
 #include <goto-programs/loopst.h>
 #include <goto-programs/goto_loops.h>
-#include <util/message.h>
+#include <util/message/message.h>
 /**
  * @brief Base interface to run an algorithm in esbmc
  */
@@ -106,7 +106,7 @@ class goto_functions_algorithm : public algorithm
 public:
   explicit goto_functions_algorithm(
     goto_functionst &goto_functions,
-    message_handlert &msg,
+    const messaget &msg,
     std::string disable_cmd,
     bool sideffect)
     : algorithm(disable_cmd, sideffect),
@@ -133,8 +133,8 @@ protected:
   bool remove_last_seen_loop = false;
   ;
 
+  const messaget &msg; // This is needed to get the program loop
 private:
-  message_handlert &msg; // This is needed to get the program loop
   unsigned number_of_functions = 0;
   unsigned number_of_loops = 0;
 };

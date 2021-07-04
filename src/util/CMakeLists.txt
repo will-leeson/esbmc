@@ -28,6 +28,6 @@ target_include_directories(util_esbmc
         )
 
 target_link_libraries(util_esbmc default_message fmt::fmt ${Boost_LIBRARIES})
-target_link_libraries(algorithms gotoprograms)
+target_link_libraries(algorithms util_esbmc gotoprograms)
 
 add_subdirectory(message)
