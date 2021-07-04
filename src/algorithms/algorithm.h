@@ -54,10 +54,8 @@ public:
     {
       if(cmd.isset(x.c_str()))
       {
-        std::cout << x << " cannot be used with the algorithm\n";
         return false;
       }
-      std::cout << "Looking for " << x;
     }
     return true;
   }

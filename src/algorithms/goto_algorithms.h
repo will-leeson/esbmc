@@ -17,7 +17,7 @@
 class unwind_goto_functions : public goto_functions_algorithm
 {
 public:
-  unwind_goto_functions(goto_functionst &goto_functions, message_handlert &msg)
+  unwind_goto_functions(goto_functionst &goto_functions, const messaget &msg)
     : goto_functions_algorithm(goto_functions), msg(msg)
   {
   }
@@ -27,7 +27,7 @@ protected:
   void unroll_loop(goto_programt &goto_program, loopst &loop);
 
 private:
-  message_handlert &msg; // This is needed to get the program loop
+  const messaget &msg; // This is needed to get the program loop
 };
 
 /**
@@ -57,7 +57,7 @@ class bounded_unwind_goto_functions : public unwind_goto_functions
 public:
   bounded_unwind_goto_functions(
     goto_functionst &goto_functions,
-    message_handlert &msg)
+    const messaget &msg)
     : unwind_goto_functions(goto_functions, msg)
   {
     unsupported_options = {"unwind", "context-bound"};

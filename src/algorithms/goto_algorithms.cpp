@@ -37,7 +37,7 @@ void unwind_goto_functions::unroll_loop(
     }
   }
   // we make k-1 copies, to be inserted before loop_exit
-  goto_programt copies;
+  goto_programt copies(msg);
   for(unsigned i = 1; i < unwind; i++)
   {
     // IF !COND GOTO X

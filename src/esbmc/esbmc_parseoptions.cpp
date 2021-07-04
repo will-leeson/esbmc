@@ -1520,6 +1520,12 @@ bool esbmc_parseoptionst::process_goto_program(
   optionst &options,
   goto_functionst &goto_functions)
 {
+    // unwind loops
+    if(!cmdline.isset("no-unroll"))
+    {
+    bounded_loop_unroller unwind_loops(goto_functions, msg);
+    unwind_loops.check_and_run(options);
+    }
   try
   {
     namespacet ns(context);
@@ -1602,11 +1608,6 @@ bool esbmc_parseoptionst::process_goto_program(
       value_set_analysis.update(goto_functions);
     }
 
-    // unwind loops
-    optionst opts;
-    get_command_line_options(opts);
-    bounded_loop_unroller unwind_loops(goto_functions, msg);
-    unwind_loops.check_and_run(opts);
 
     // show it?
     if(cmdline.isset("show-loops"))
