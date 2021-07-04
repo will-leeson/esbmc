@@ -6,3 +6,5 @@ release
 .vs
 out
 .vscode
+.idea
+cmake-build*
