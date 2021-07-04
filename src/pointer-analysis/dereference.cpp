@@ -416,9 +416,8 @@ expr2tc dereferencet::dereference_expr_nonscalar(
     }
     else
     {
-      std::cerr << "Unexpected expression in dereference_expr_nonscalar"
-                << std::endl;
-      expr->dump();
+      msg.error(fmt::format(
+        "Unexpected expression in dereference_expr_nonscalar\n{}", *expr));
       abort();
     }
 
@@ -619,7 +618,7 @@ expr2tc dereferencet::build_reference_to(
 
   if(!is_object_descriptor2t(what))
   {
-    std::cerr << "unknown points-to: " << get_expr_id(what);
+    msg.error(fmt::format("unknown points-to: {}", get_expr_id(what)));
     abort();
   }
 
@@ -823,8 +822,8 @@ void dereferencet::build_reference_rec(
     flags |= flag_dst_union; // Hack because unions are arrays
   else
   {
-    std::cerr << "Unrecognized dest type during dereference" << std::endl;
-    type->dump();
+    msg.error(
+      fmt::format("Unrecognized dest type during dereference\n{}", *type));
     abort();
   }
 
@@ -832,7 +831,7 @@ void dereferencet::build_reference_rec(
     flags |= flag_src_struct;
   else if(is_union_type(value))
   {
-    std::cerr << "Dereference target of type union is now illegal" << std::endl;
+    msg.error("Dereference target of type union is now illegal");
     abort();
   }
   else if(is_scalar_type(value))
@@ -841,8 +840,8 @@ void dereferencet::build_reference_rec(
     flags |= flag_src_array;
   else
   {
-    std::cerr << "Unrecognized src type during dereference" << std::endl;
-    value->type->dump();
+    msg.error(fmt::format(
+      "Unrecognized src type during dereference\n{}", *value->type));
     abort();
   }
 
@@ -936,7 +935,7 @@ void dereferencet::build_reference_rec(
 
   // No scope for constructing references to arrays
   default:
-    std::cerr << "Unrecognized input to build_reference_rec" << std::endl;
+    msg.error("Unrecognized input to build_reference_rec");
     abort();
   }
 }
@@ -1495,9 +1494,11 @@ void dereferencet::construct_struct_ref_from_const_offset(
     return;
   }
 
-  std::cerr << "Unexpectedly " << get_type_id(value->type) << " type'd";
-  std::cerr << " argument to construct_struct_ref" << std::endl;
-  abort();
+  std::ostringstream oss;
+  oss << "Unexpectedly " << get_type_id(value->type) << " type'd";
+  oss << " argument to construct_struct_ref"
+      << "\n";
+  msg.error(oss.str());
 }
 
 void dereferencet::construct_struct_ref_from_dyn_offset(

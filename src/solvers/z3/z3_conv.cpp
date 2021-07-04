@@ -7,34 +7,41 @@
 
 #include <cassert>
 #include <z3_conv.h>
+#include <util/message/default_message.h>
 
 #define new_ast new_solver_ast<z3_smt_ast>
 
 static void error_handler(Z3_context c, Z3_error_code e)
 {
-  std::cerr << "Z3 error " << e << " encountered" << std::endl;
-  std::cerr << Z3_get_error_msg(c, e) << std::endl;
-  abort();
+  std::ostringstream oss;
+  oss << "Z3 error " << e << " encountered"
+      << "\n";
+  oss << Z3_get_error_msg(c, e);
+  assert(0 && oss.str().c_str());
 }
 
 smt_convt *create_new_z3_solver(
-  bool int_encoding,
+  const optionst &options,
   const namespacet &ns,
   tuple_iface **tuple_api,
   array_iface **array_api,
-  fp_convt **fp_api)
+  fp_convt **fp_api,
+  const messaget &msg)
 {
-  z3_convt *conv = new z3_convt(int_encoding, ns);
+  z3_convt *conv = new z3_convt(ns, options, msg);
   *tuple_api = static_cast<tuple_iface *>(conv);
   *array_api = static_cast<array_iface *>(conv);
   *fp_api = static_cast<fp_convt *>(conv);
   return conv;
 }
 
-z3_convt::z3_convt(bool int_encoding, const namespacet &_ns)
-  : smt_convt(int_encoding, _ns),
+z3_convt::z3_convt(
+  const namespacet &_ns,
+  const optionst &_options,
+  const messaget &msg)
+  : smt_convt(_ns, _options, msg),
     array_iface(true, true),
-    fp_convt(this),
+    fp_convt(this, msg),
     z3_ctx(),
     solver((z3::tactic(z3_ctx, "simplify") & z3::tactic(z3_ctx, "solve-eqs") &
             z3::tactic(z3_ctx, "simplify") & z3::tactic(z3_ctx, "smt"))
@@ -89,14 +96,14 @@ z3_convt::mk_tuple_update(const z3::expr &t, unsigned i, const z3::expr &newval)
   z3::sort ty = t.get_sort();
   if(!ty.is_datatype())
   {
-    std::cerr << "argument must be a tuple";
+    msg.error("argument must be a tuple");
     abort();
   }
 
   std::size_t num_fields = Z3_get_tuple_sort_num_fields(z3_ctx, ty);
   if(i >= num_fields)
   {
-    std::cerr << "invalid tuple update, index is too big";
+    msg.error("invalid tuple update, index is too big");
     abort();
   }
 
@@ -125,15 +132,14 @@ z3::expr z3_convt::mk_tuple_select(const z3::expr &t, unsigned i)
   z3::sort ty = t.get_sort();
   if(!ty.is_datatype())
   {
-    std::cerr << "Z3 conversion: argument must be a tuple" << std::endl;
+    msg.error("Z3 conversion: argument must be a tuple");
     abort();
   }
 
   size_t num_fields = Z3_get_tuple_sort_num_fields(z3_ctx, ty);
   if(i >= num_fields)
   {
-    std::cerr << "Z3 conversion: invalid tuple select, index is too large"
-              << std::endl;
+    msg.error("Z3 conversion: invalid tuple select, index is too large");
     abort();
   }
 
@@ -1142,7 +1148,7 @@ bool z3_convt::get_bool(smt_astt a)
     res = false;
     break;
   default:
-    std::cerr << "Can't get boolean value from Z3\n";
+    msg.error("Can't get boolean value from Z3");
     abort();
   }
 
@@ -1215,14 +1221,20 @@ z3_convt::get_array_elem(smt_astt array, uint64_t index, const type2tc &subtype)
 
 void z3_smt_ast::dump() const
 {
-  std::cout << Z3_ast_to_string(a.ctx(), a) << std::endl;
-  std::cout << "sort is " << Z3_sort_to_string(a.ctx(), Z3_get_sort(a.ctx(), a))
-            << std::endl;
+  default_message msg;
+  std::ostringstream oss;
+  oss << Z3_ast_to_string(a.ctx(), a) << "\n";
+  oss << "sort is " << Z3_sort_to_string(a.ctx(), Z3_get_sort(a.ctx(), a))
+      << "\n";
+  msg.debug(oss.str());
 }
 
 void z3_convt::dump_smt()
 {
-  std::cout << solver << std::endl;
+  default_message msg;
+  std::ostringstream oss;
+  oss << solver;
+  msg.debug(oss.str());
 }
 
 smt_astt z3_convt::mk_smt_fpbv_gt(smt_astt lhs, smt_astt rhs)
@@ -1280,7 +1292,7 @@ smt_astt z3_convt::mk_smt_fpbv_neg(smt_astt op)
 
 void z3_convt::print_model()
 {
-  std::cout << Z3_model_to_string(z3_ctx, solver.get_model());
+  msg.status(Z3_model_to_string(z3_ctx, solver.get_model()));
 }
 
 smt_sortt z3_convt::mk_fpbv_sort(const unsigned ew, const unsigned sw)

@@ -9,6 +9,8 @@
 #include <util/irep2_utils.h>
 #include <util/migrate.h>
 #include <util/std_types.h>
+#include <util/message/format.h>
+#include <util/message/default_message.h>
 
 template <typename T>
 class register_irep_methods;
@@ -123,7 +125,8 @@ std::string type2t::pretty(unsigned int indent) const
 
 void type2t::dump() const
 {
-  std::cout << pretty(0) << std::endl;
+  default_message msg;
+  msg.debug(pretty(0));
 }
 
 size_t type2t::crc() const
@@ -266,14 +269,13 @@ unsigned int empty_type2t::get_width() const
 
 unsigned int symbol_type2t::get_width() const
 {
-  std::cerr << "Fetching width of symbol type - invalid operation" << std::endl;
+  assert(0 && "Fetching width of symbol type - invalid operation");
   abort();
 }
 
 unsigned int cpp_name_type2t::get_width() const
 {
-  std::cerr << "Fetching width of cpp_name type - invalid operation"
-            << std::endl;
+  assert(0 && "Fetching width of cpp_name type - invalid operation");
   abort();
 }
 
@@ -358,13 +360,23 @@ unsigned int struct_union_data::get_component_number(const irep_idt &comp) const
 
   if(!count)
   {
-    std::cerr << "Looking up index of nonexistant member \"" << comp
-              << "\" in struct/union \"" << name << "\"" << std::endl;
+    assert(
+      0 &&
+      fmt::format(
+        "Looking up index of nonexistant member \"{}\" in struct/union \"{}\"",
+        comp,
+        name)
+        .c_str());
   }
   else if(count > 1)
   {
-    std::cerr << "Name \"" << comp << "\" matches more than one member"
-              << "\" in struct/union \"" << name << "\"" << std::endl;
+    assert(
+      0 &&
+      fmt::format(
+        "Name \"{}\" matches more than one member\" in struct/union \"{}\"",
+        comp,
+        name)
+        .c_str());
   }
 
   abort();
@@ -629,7 +641,8 @@ std::string expr2t::pretty(unsigned int indent) const
 
 void expr2t::dump() const
 {
-  std::cout << pretty(0) << std::endl;
+  default_message msg;
+  msg.debug((0));
 }
 
 // Map a base type to it's list of names
@@ -725,7 +738,7 @@ std::string symbol_data::get_symbol_name() const
     return thename.as_string() + "&" + i2string(node_num) + "#" +
            i2string(level2_num);
   default:
-    std::cerr << "Unrecognized renaming level enum" << std::endl;
+    assert(0 && "Unrecognized renaming level enum");
     abort();
   }
 }
@@ -1006,7 +1019,7 @@ type_to_string(const symbol_data::renaming_level &theval, int)
   case symbol_data::level2_global:
     return "Level 2 (global)";
   default:
-    std::cerr << "Unrecognized renaming level enum" << std::endl;
+    assert(0 && "Unrecognized renaming level enum");
     abort();
   }
 }

@@ -123,15 +123,14 @@ smt_convt::convert_pointer_arith(const expr2tc &expr, const type2tc &type)
     }
     else
     {
-      std::cerr << "Pointer arithmetic with two pointer operands" << std::endl;
+      msg.error("Pointer arithmetic with two pointer operands");
       abort();
     }
     break;
   case 4:
     // Artithmetic operation that has the result type of ptr.
     // Should have been handled at a higher level
-    std::cerr << "Non-pointer op being interpreted as pointer without cast"
-              << std::endl;
+    msg.error("Non-pointer op being interpreted as pointer without cast");
     abort();
     break;
   case 1:
@@ -193,7 +192,7 @@ smt_convt::convert_pointer_arith(const expr2tc &expr, const type2tc &type)
   }
   }
 
-  std::cerr << "Fell through convert_pointer_logic" << std::endl;
+  msg.error("Fell through convert_pointer_logic");
   abort();
 }
 
@@ -243,8 +242,8 @@ smt_astt smt_convt::convert_identifier_pointer(
 
   if(!ptr_foo_inited)
   {
-    std::cerr << "SMT solver must call smt_post_init immediately after "
-              << "construction" << std::endl;
+    msg.error(
+      "SMT solver must call smt_post_init immediately after construction");
     abort();
   }
 
@@ -527,8 +526,7 @@ smt_astt smt_convt::convert_addr_of(const expr2tc &expr)
     return convert_ast(tmp);
   }
 
-  std::cerr << "Unrecognized address_of operand:" << std::endl;
-  expr->dump();
+  msg.error(fmt::format("Unrecognized address_of operand:\n{}", *expr));
   abort();
 }
 

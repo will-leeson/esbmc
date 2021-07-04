@@ -334,6 +334,10 @@ public:
    */
   class symbolic_type_excp
   {
+    virtual const char *what() const throw()
+    {
+      return "Sizeof symbolic type encountered";
+    }
   };
 
   typedef std::function<void(const type2tc &t)> const_subtype_delegate;

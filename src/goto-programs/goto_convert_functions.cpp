@@ -24,7 +24,7 @@ goto_convert_functionst::goto_convert_functionst(
   contextt &_context,
   optionst &_options,
   goto_functionst &_functions,
-  message_handlert &_message_handler)
+  const messaget &_message_handler)
   : goto_convertt(_context, _options, _message_handler), functions(_functions)
 {
 }
@@ -103,7 +103,10 @@ void goto_convert_functionst::convert_function(symbolt &symbol)
   tmp_symbol_prefix = id2string(symbol.id) + "::$tmp::";
   temporary_counter = 0;
 
-  goto_functiont &f = functions.function_map[identifier];
+  auto it = functions.function_map.find(identifier);
+  if(it == functions.function_map.end())
+    functions.function_map.emplace(identifier, message_handler);
+  goto_functiont &f = functions.function_map.at(identifier);
   f.type = to_code_type(symbol.type);
   f.body_available = symbol.value.is_not_nil();
 
@@ -127,7 +130,7 @@ void goto_convert_functionst::convert_function(symbolt &symbol)
     end_location.make_nil();
 
   // add "end of function"
-  goto_programt tmp_end_function;
+  goto_programt tmp_end_function(get_message_handler());
   goto_programt::targett end_function = tmp_end_function.add_instruction();
   end_function->type = END_FUNCTION;
   end_function->location = end_location;
@@ -185,7 +188,7 @@ void goto_convert(
   contextt &context,
   optionst &options,
   goto_functionst &functions,
-  message_handlert &message_handler)
+  const messaget &message_handler)
 {
   goto_convert_functionst goto_convert_functions(
     context, options, functions, message_handler);
@@ -314,8 +317,8 @@ void goto_convert_functionst::rename_types(
       else
       {
         // And if we fail
-        std::cerr << "Can't resolve type symbol " << ident;
-        std::cerr << " at symbol squashing time" << std::endl;
+        message_handler.error(fmt::format(
+          "Can't resolve type symbol {} at symbol squashing time", ident));
         abort();
       }
     }

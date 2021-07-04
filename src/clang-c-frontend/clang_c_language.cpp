@@ -23,6 +23,7 @@ Author: Daniel Kroening, kroening@cs.cmu.edu
 #include <clang-c-frontend/expr2c.h>
 #include <sstream>
 #include <util/c_link.h>
+#include <util/message/format.h>
 
 languaget *new_clang_c_language()
 {
@@ -35,8 +36,8 @@ clang_c_languaget::clang_c_languaget()
   auto p = boost::filesystem::temp_directory_path();
   if(!boost::filesystem::exists(p) || !boost::filesystem::is_directory(p))
   {
-    std::cerr << "Can't find temporary directory (needed to dump clang headers)"
-              << std::endl;
+    assert(
+      0 && "Can't find temporary directory (needed to dump clang headers)");
     abort();
   }
 
@@ -45,9 +46,8 @@ clang_c_languaget::clang_c_languaget()
   boost::filesystem::create_directory(p);
   if(!boost::filesystem::is_directory(p))
   {
-    std::cerr
-      << "Can't create temporary directory (needed to dump clang headers)"
-      << std::endl;
+    assert(
+      0 && "Can't create temporary directory (needed to dump clang headers)");
     abort();
   }
 
@@ -74,7 +74,9 @@ void clang_c_languaget::build_compiler_args(const std::string &&tmp_dir)
     break;
 
   default:
-    std::cerr << "Unknown word size: " << config.ansi_c.word_size << std::endl;
+    assert(
+      0 &&
+      fmt::format("Unknown word size: {}\n", config.ansi_c.word_size).c_str());
     abort();
   }
 
@@ -194,14 +196,12 @@ void clang_c_languaget::force_file_type()
   compiler_args.push_back("c");
 }
 
-bool clang_c_languaget::parse(
-  const std::string &path,
-  message_handlert &message_handler)
+bool clang_c_languaget::parse(const std::string &path, const messaget &msg)
 {
   // preprocessing
 
   std::ostringstream o_preprocessed;
-  if(preprocess(path, o_preprocessed, message_handler))
+  if(preprocess(path, o_preprocessed, msg))
     return true;
 
   // Force the file type, .c for the C frontend and .cpp for the C++ one
@@ -230,19 +230,19 @@ bool clang_c_languaget::parse(
 bool clang_c_languaget::typecheck(
   contextt &context,
   const std::string &module,
-  message_handlert &message_handler)
+  const messaget &msg)
 {
-  contextt new_context;
+  contextt new_context(msg);
 
-  clang_c_convertert converter(new_context, ASTs);
+  clang_c_convertert converter(new_context, ASTs, msg);
   if(converter.convert())
     return true;
 
-  clang_c_adjust adjuster(new_context);
+  clang_c_adjust adjuster(new_context, msg);
   if(adjuster.adjust())
     return true;
 
-  if(c_link(context, new_context, message_handler, module))
+  if(c_link(context, new_context, msg, module))
     return true;
 
   return false;
@@ -257,7 +257,7 @@ void clang_c_languaget::show_parse(std::ostream &)
 bool clang_c_languaget::preprocess(
   const std::string &,
   std::ostream &,
-  message_handlert &)
+  const messaget &)
 {
 // TODO: Check the preprocess situation.
 #if 0
@@ -266,12 +266,10 @@ bool clang_c_languaget::preprocess(
   return false;
 }
 
-bool clang_c_languaget::final(
-  contextt &context,
-  message_handlert &message_handler)
+bool clang_c_languaget::final(contextt &context, const messaget &msg)
 {
-  add_cprover_library(context, message_handler);
-  return clang_main(context, message_handler);
+  add_cprover_library(context, msg);
+  return clang_main(context, msg);
 }
 
 std::string clang_c_languaget::internal_additions()

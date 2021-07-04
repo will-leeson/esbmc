@@ -35,12 +35,18 @@ execution_statet::execution_statet(
   contextt &context,
   std::shared_ptr<ex_state_level2t> l2init,
   optionst &options,
-  message_handlert &_message_handler)
-  : goto_symext(ns, context, goto_functions, std::move(_target), options),
+  const messaget &message_handler)
+  : goto_symext(
+      ns,
+      context,
+      goto_functions,
+      std::move(_target),
+      options,
+      message_handler),
     owning_rt(art),
     state_level2(std::move(l2init)),
-    global_value_set(ns),
-    message_handler(_message_handler)
+    global_value_set(ns, message_handler),
+    message_handler(message_handler)
 {
   art1 = owning_rt;
   CS_number = 0;
@@ -60,15 +66,14 @@ execution_statet::execution_statet(
     goto_functions.function_map.find("__ESBMC_main");
   if(it == goto_functions.function_map.end())
   {
-    std::cerr << "main symbol not found; please set an entry point"
-              << std::endl;
+    msg.error("main symbol not found; please set an entry point");
     abort();
   }
 
   const goto_programt *goto_program = &(it->second.body);
 
   // Initialize initial thread state
-  goto_symex_statet state(*state_level2, global_value_set, ns);
+  goto_symex_statet state(*state_level2, global_value_set, ns, msg);
   state.initialize(
     (*goto_program).instructions.begin(),
     (*goto_program).instructions.end(),
@@ -130,7 +135,7 @@ execution_statet::execution_statet(const execution_statet &ex)
   std::vector<goto_symex_statet>::const_iterator it;
   for(it = ex.threads_state.begin(); it != ex.threads_state.end(); it++)
   {
-    goto_symex_statet state(*it, *state_level2, global_value_set);
+    goto_symex_statet state(*it, *state_level2, global_value_set, msg);
     threads_state.push_back(state);
   }
 
@@ -215,13 +220,12 @@ void execution_statet::symex_step(reachability_treet &art)
   last_insn = &instruction;
 
   merge_gotos();
-
   if(break_insn != 0 && break_insn == instruction.location_number)
   {
 #ifndef _WIN32
     __asm__("int $3");
 #else
-    std::cerr << "Can't trap on windows, sorry" << std::endl;
+    msg.error("Can't trap on windows, sorry");
     abort();
 #endif
   }
@@ -236,12 +240,16 @@ void execution_statet::symex_step(reachability_treet &art)
 
   if(options.get_bool_option("show-symex-value-sets"))
   {
-    std::cout << '\n';
+    msg.status("");
     state.value_set.dump();
   }
 
   if(symex_trace || options.get_bool_option("show-symex-value-sets"))
-    state.source.pc->output_instruction(ns, "", std::cout, false);
+  {
+    std::ostringstream oss;
+    state.source.pc->output_instruction(ns, "", oss, msg, false);
+    msg.result(oss.str());
+  }
 
   switch(instruction.type)
   {
@@ -481,7 +489,7 @@ void execution_statet::preserve_last_paths()
   // Add the current path to the set of paths to be preserved. Don't do this
   // if the current guard is false, though.
   if(!ls.guard.is_false())
-    pp.push_back(std::make_pair(ls.source.pc, goto_statet(ls)));
+    pp.push_back(std::make_pair(ls.source.pc, goto_statet(ls, msg)));
 
   // Now then -- was it a goto? And did we actually branch to it? Detect this
   // by examining how the guard has changed: if there's no change, then the
@@ -596,7 +604,7 @@ void execution_statet::restore_last_paths()
 
     // Create a fresh new goto_statet to be merged in at the target insn
     assert(cur_state->top().goto_state_map[loc].size() == 0);
-    cur_state->top().goto_state_map[loc].emplace_back(*cur_state);
+    cur_state->top().goto_state_map[loc].emplace_back(*cur_state, msg);
     // Get ref to it
     auto &new_gs = *cur_state->top().goto_state_map[loc].begin();
 
@@ -688,7 +696,7 @@ void execution_statet::execute_guard()
 
 unsigned int execution_statet::add_thread(const goto_programt *prog)
 {
-  goto_symex_statet new_state(*state_level2, global_value_set, ns);
+  goto_symex_statet new_state(*state_level2, global_value_set, ns, msg);
   new_state.initialize(
     prog->instructions.begin(),
     prog->instructions.end(),
@@ -735,7 +743,7 @@ unsigned int execution_statet::add_thread(const goto_programt *prog)
   // While we've recorded the new thread as starting in the designated program,
   // it might not run immediately, thus must have it's path preserved:
   preserved_paths[thread_nr].push_back(std::make_pair(
-    prog->instructions.begin(), goto_statet(threads_state[thread_nr])));
+    prog->instructions.begin(), goto_statet(threads_state[thread_nr], msg)));
 
   return threads_state.size() - 1; // thread ID, zero based
 }
@@ -1081,9 +1089,12 @@ void execution_statet::print_stack_traces(unsigned int indent) const
   i = 0;
   for(it = threads_state.begin(); it != threads_state.end(); it++)
   {
-    std::cout << spaces << "Thread " << i++ << ":" << std::endl;
-    it->print_stack_trace(indent + 2);
-    std::cout << std::endl;
+    std::ostringstream oss;
+    oss << spaces << "Thread " << i++ << ":"
+        << "\n";
+    it->print_stack_trace(indent + 2, oss);
+    oss << "\n";
+    msg.status(oss.str());
   }
 }
 
@@ -1093,9 +1104,10 @@ void execution_statet::switch_to_monitor()
   {
     if(!mon_thread_warning)
     {
-      std::cerr << "Switching to ended monitor; you need to increase its "
-                   "context or prefix bound"
-                << std::endl;
+      msg.error(
+        "Switching to ended monitor; you need to increase its "
+        "context or prefix bound");
+
       mon_thread_warning = true;
     }
 

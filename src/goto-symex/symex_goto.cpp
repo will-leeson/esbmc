@@ -12,7 +12,7 @@
 #include <goto-symex/goto_symex.h>
 #include <goto-symex/slice.h>
 #include <goto-symex/symex_target_equation.h>
-#include <iostream>
+
 #include <langapi/language_ui.h>
 #include <solvers/smtlib/smtlib_conv.h>
 #include <util/expr_util.h>
@@ -154,7 +154,7 @@ void goto_symext::symex_goto(const expr2tc &old_guard)
   statet::goto_state_listt &goto_state_list =
     cur_state->top().goto_state_map[new_state_pc];
 
-  goto_state_list.emplace_back(*cur_state);
+  goto_state_list.emplace_back(*cur_state, msg);
 
   // adjust guards
   if(new_guard_true)
@@ -455,10 +455,15 @@ bool goto_symext::get_unwind(
     this_loop_max_unwind != 0 && unwind >= this_loop_max_unwind;
   if(!options.get_bool_option("quiet"))
   {
-    std::cout << (stop_unwind ? "Not unwinding " : "Unwinding ")
-              << "loop " + i2string(cur_state->source.pc->loop_number)
-              << " iteration " + integer2string(unwind) + " "
-              << cur_state->source.pc->location.as_string() << '\n';
+    msg.status(fmt::format(
+      stop_unwind ? "Not unwinding "
+                  : "Unwinding "
+                    "loop {} {} {} {} {}",
+      i2string(cur_state->source.pc->loop_number),
+      " iteration ",
+      integer2string(unwind),
+      " ",
+      cur_state->source.pc->location.as_string()));
   }
 
   return stop_unwind;

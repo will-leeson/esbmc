@@ -6,6 +6,8 @@
 #include <util/prefix.h>
 #include <util/simplify_expr.h>
 #include <util/type_byte_size.h>
+#include <util/message/format.h>
+#include <message/default_message.h>
 
 // File for old irep -> new irep conversions.
 
@@ -356,8 +358,7 @@ void real_migrate_type(
   }
   else
   {
-    type.dump();
-    assert(0);
+    assert(0 && fmt::format("{}", type).c_str());
   }
 }
 
@@ -471,8 +472,7 @@ void migrate_type(
   }
   else
   {
-    type.dump();
-    assert(0);
+    assert(0 && fmt::format("{}", type).c_str());
   }
 }
 
@@ -769,9 +769,11 @@ static void flatten_to_bytes(const exprt &expr, std::vector<expr2tc> &bytes)
   }
   else
   {
-    std::cerr << "Unrecognized type " << get_type_id(*new_expr->type);
-    std::cerr << " when flattening union literal" << std::endl;
-    abort();
+    assert(
+      0 && fmt::format(
+             "Unrecognized type {}  when flattening union literal",
+             get_type_id(*new_expr->type))
+             .c_str());
   }
 }
 
@@ -1876,9 +1878,9 @@ void migrate_expr(const exprt &expr, expr2tc &new_expr_ref)
     }
     else
     {
-      std::cerr << "Unexpected side-effect statement: " << expr.statement()
-                << std::endl;
-      abort();
+      assert(
+        0 && fmt::format("Unexpected side-effect statement: ", expr.statement())
+               .c_str());
     }
 
     new_expr_ref =
@@ -2109,8 +2111,7 @@ void migrate_expr(const exprt &expr, expr2tc &new_expr_ref)
   }
   else
   {
-    expr.dump();
-    throw new std::string("migrate expr failed");
+    assert(0 && fmt::format("{}\nmigrate expr failed", expr).c_str());
   }
 }
 
@@ -2306,7 +2307,7 @@ typet migrate_type_back(const type2tc &ref)
     return ret;
   }
   default:
-    std::cerr << "Unrecognized type in migrate_type_back" << std::endl;
+    assert(0 && "Unrecognized type in migrate_type_back");
     abort();
   }
 }
@@ -3329,7 +3330,7 @@ exprt migrate_expr_back(const expr2tc &ref)
     return back;
   }
   default:
-    std::cerr << "Unrecognized expr in migrate_expr_back" << std::endl;
+    assert(0 && "Unrecognized expr in migrate_expr_back");
     abort();
   }
 }

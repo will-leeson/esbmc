@@ -54,15 +54,15 @@ std::string clang_cpp_languaget::internal_additions()
 bool clang_cpp_languaget::typecheck(
   contextt &context,
   const std::string &module,
-  message_handlert &message_handler)
+  const messaget &message_handler)
 {
-  contextt new_context;
+  contextt new_context(message_handler);
 
-  clang_cpp_convertert converter(new_context, ASTs);
+  clang_cpp_convertert converter(new_context, ASTs, message_handler);
   if(converter.convert())
     return true;
 
-  clang_cpp_adjust adjuster(new_context);
+  clang_cpp_adjust adjuster(new_context, message_handler);
   if(adjuster.adjust())
     return true;
 
@@ -74,7 +74,7 @@ bool clang_cpp_languaget::typecheck(
 
 bool clang_cpp_languaget::final(
   contextt &context,
-  message_handlert &message_handler)
+  const messaget &message_handler)
 {
   add_cprover_library(context, message_handler);
   return clang_main(context, message_handler);

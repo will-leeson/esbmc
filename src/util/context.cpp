@@ -7,6 +7,7 @@ Author: Daniel Kroening, kroening@kroening.com
 \*******************************************************************/
 
 #include <util/context.h>
+#include <util/message/default_message.h>
 
 bool contextt::add(const symbolt &symbol)
 {
@@ -45,8 +46,8 @@ bool contextt::move(symbolt &symbol, symbolt *&new_symbol)
 
 void contextt::dump() const
 {
-  std::cout << std::endl << "Symbols:" << std::endl;
-
+  default_message msg;
+  msg.debug("\nSymbols:");
   // Do assignments based on "value".
   foreach_operand([](const symbolt &s) { s.dump(); });
 }
@@ -72,7 +73,7 @@ void contextt::erase_symbol(irep_idt name)
   symbolst::iterator it = symbols.find(name);
   if(it == symbols.end())
   {
-    std::cerr << "Couldn't find symbol to erase" << std::endl;
+    msg.error("Couldn't find symbol to erase");
     abort();
   }
 

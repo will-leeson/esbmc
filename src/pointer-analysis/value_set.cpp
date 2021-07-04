@@ -23,6 +23,8 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/std_code.h>
 #include <util/std_expr.h>
 #include <util/type_byte_size.h>
+#include <util/message/format.h>
+#include <util/message/default_message.h>
 
 object_numberingt value_sett::object_numbering;
 object_number_numberingt value_sett::obj_numbering_refset;
@@ -75,18 +77,18 @@ void value_sett::output(std::ostream &out) const
 
       // Display invalid / unknown objects as just that,
       if(is_invalid2t(o) || is_unknown2t(o))
-        result = from_expr(ns, identifier, o);
+        result = from_expr(ns, identifier, o, msg);
       else
       {
         // Everything else, display as a triple of <object, offset, type>.
-        result = "<" + from_expr(ns, identifier, o) + ", ";
+        result = "<" + from_expr(ns, identifier, o, msg) + ", ";
 
         if(o_it->second.offset_is_set)
           result += integer2string(o_it->second.offset) + "";
         else
           result += "*";
 
-        result += ", " + from_type(ns, identifier, o->type);
+        result += ", " + from_type(ns, identifier, o->type, msg);
 
         result += ">";
       }
@@ -107,7 +109,8 @@ void value_sett::output(std::ostream &out) const
       }
     }
 
-    out << " } " << std::endl;
+    out << " } "
+        << "\n";
   }
 }
 
@@ -374,7 +377,7 @@ void value_sett::get_value_set_rec(
       return;
 
     default:
-      std::cerr << "Unexpected side-effect: " << expr->pretty(0) << std::endl;
+      msg.error(fmt::format("Unexpected side-effect: {}", *expr));
       abort();
     }
   }
@@ -578,9 +581,9 @@ void value_sett::get_value_set_rec(
         }
         else
         {
-          std::cerr << "Pointer arithmetic on type where we can't determine ";
-          std::cerr << "size:" << std::endl;
-          std::cerr << subtype->pretty(0) << std::endl;
+          msg.error(fmt::format(
+            "Pointer arithmetic on type where we can't determine size\n{}",
+            *subtype));
           abort();
         }
       }
@@ -1204,8 +1207,7 @@ void value_sett::assign_rec(
   }
   else
   {
-    std::cerr << "assign NYI: `" + get_expr_id(lhs) + "'\n";
-    abort();
+    throw std::runtime_error(fmt::format("assign NYI: `{}'", get_expr_id(lhs)));
   }
 }
 
@@ -1351,9 +1353,8 @@ void value_sett::apply_code(const expr2tc &code)
   }
   else
   {
-    std::cerr << code->pretty() << std::endl;
-    std::cerr << "value_sett: unexpected statement" << std::endl;
-    abort();
+    throw std::runtime_error(
+      fmt::format("{}\nvalue_sett: unexpected statement", *code));
   }
 }
 
@@ -1403,7 +1404,10 @@ value_sett::make_member(const expr2tc &src, const irep_idt &component_name)
 
 void value_sett::dump() const
 {
-  output(std::cout);
+  default_message msg;
+  std::ostringstream oss;
+  output(oss);
+  msg.debug(oss.str());
 }
 
 void value_sett::obj_numbering_ref(unsigned int num)

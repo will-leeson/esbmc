@@ -1,4 +1,5 @@
 #include <fstream>
+#include <memory>
 #include <goto-programs/goto_convert_functions.h>
 #include <goto-programs/write_goto_binary.h>
 #include <langapi/language_ui.h>
@@ -7,7 +8,7 @@
 #include <util/config.h>
 #include <util/irep2.h>
 #include <util/parseoptions.h>
-#include <util/ui_message.h>
+#include <util/message/default_message.h>
 
 const struct group_opt_templ c2goto_options[] = {
   {"Basic Usage",
@@ -42,8 +43,9 @@ const struct group_opt_templ c2goto_options[] = {
 class c2goto_parseopt : public parseoptions_baset, public language_uit
 {
 public:
-  c2goto_parseopt(int argc, const char **argv)
-    : parseoptions_baset(c2goto_options, argc, argv), language_uit(cmdline)
+  c2goto_parseopt(int argc, const char **argv, const messaget &msg)
+    : parseoptions_baset(c2goto_options, argc, argv, msg),
+      language_uit(cmdline, msg)
   {
   }
 
@@ -51,11 +53,11 @@ public:
   {
     goto_functionst goto_functions;
 
-    config.set(cmdline);
+    config.set(cmdline, msg);
 
     if(!cmdline.isset("output"))
     {
-      std::cerr << "Must set output file" << std::endl;
+      msg.error("Must set output file");
       return 1;
     }
 
@@ -69,7 +71,7 @@ public:
 
     if(write_goto_binary(out, context, goto_functions))
     {
-      std::cerr << "Failed to write C library to binary obj" << std::endl;
+      msg.error("Failed to write C library to binary obj");
       return 1;
     }
 
@@ -83,7 +85,8 @@ int main(int argc, const char **argv)
   type_poolt bees(true);
   type_pool = bees;
 
-  c2goto_parseopt parseopt(argc, argv);
+  default_message msg;
+  c2goto_parseopt parseopt(argc, argv, msg);
   return parseopt.main();
 }
 

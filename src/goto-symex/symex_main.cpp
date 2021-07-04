@@ -13,7 +13,7 @@
 #include <goto-symex/goto_symex_state.h>
 #include <goto-symex/reachability_tree.h>
 #include <goto-symex/symex_target_equation.h>
-#include <iostream>
+
 #include <util/c_types.h>
 #include <util/config.h>
 #include <util/expr_util.h>
@@ -293,8 +293,11 @@ void goto_symext::symex_step(reachability_treet &art)
     break;
 
   default:
-    std::cerr << "GOTO instruction type " << instruction.type;
-    std::cerr << " not handled in goto_symext::symex_step" << std::endl;
+    std::ostringstream oss;
+    oss << "GOTO instruction type " << instruction.type;
+    oss << " not handled in goto_symext::symex_step"
+        << "\n";
+    msg.error(oss.str());
     abort();
   }
 }
@@ -615,10 +618,13 @@ void goto_symext::run_intrinsic(
   }
   else
   {
-    std::cerr << "Function call to non-intrinsic prefixed with __ESBMC";
-    std::cerr << " (fatal)\nThe name in question: " << symname;
-    std::cerr << "\n(NB: the C spec reserves the __ prefix for the compiler"
-                 " and environment)\n";
+    std::ostringstream oss;
+    oss << "Function call to non-intrinsic prefixed with __ESBMC";
+    oss << " (fatal)\nThe name in question: " << symname;
+    oss << "\n(NB: the C spec reserves the __ prefix for the compiler"
+           " and environment)\n";
+
+    msg.error(oss.str());
     abort();
   }
 }

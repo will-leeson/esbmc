@@ -11,12 +11,12 @@ Author: Daniel Kroening, kroening@kroening.com
 
 #include <sstream>
 #include <util/expr.h>
-#include <util/message.h>
-
+#include <util/message/message_handler.h>
+#include <util/message/message.h>
 class message_streamt
 {
 public:
-  message_streamt(message_handlert &_message_handler)
+  message_streamt(const messaget &_message_handler)
     : message_handler(_message_handler),
       error_found(false),
       saved_error_location(static_cast<const locationt &>(get_nil_irep()))
@@ -54,29 +54,29 @@ public:
 
   void error(const std::string &message)
   {
-    send_msg(1, message);
+    send_msg(VerbosityLevel::Error, message);
   }
 
   void warning(const std::string &message)
   {
-    send_msg(2, message);
+    send_msg(VerbosityLevel::Warning, message);
   }
 
   void error()
   {
-    send_msg(1, str.str());
+    send_msg(VerbosityLevel::Error, str.str());
     clear_err();
   }
 
   void warning()
   {
-    send_msg(2, str.str());
+    send_msg(VerbosityLevel::Warning, str.str());
     clear_err();
   }
 
   void status()
   {
-    send_msg(6, "");
+    send_msg(VerbosityLevel::Status, str.str());
     clear_err();
   }
 
@@ -87,12 +87,12 @@ public:
     return error_found;
   }
 
-  message_handlert &get_message_handler()
+  const messaget &get_message_handler()
   {
     return message_handler;
   }
 
-  void error_parse(unsigned level)
+  void error_parse(VerbosityLevel level)
   {
     error_parse(level, str.str());
     clear_err();
@@ -105,23 +105,23 @@ public:
   }
 
 protected:
-  message_handlert &message_handler;
+  const messaget &message_handler;
   bool error_found;
   locationt saved_error_location;
 
-  void send_msg(unsigned level, const std::string &message)
+  void send_msg(VerbosityLevel level, const std::string &message)
   {
     if(message == "")
       return;
-    if(level <= 1)
+    if((char)level <= (char)VerbosityLevel::Error)
       error_found = true;
     message_handler.print(level, message, saved_error_location);
     saved_error_location.make_nil();
   }
 
-  void error_parse_line(unsigned level, const std::string &line);
+  void error_parse_line(VerbosityLevel level, const std::string &line);
 
-  void error_parse(unsigned level, const std::string &error);
+  void error_parse(VerbosityLevel level, const std::string &error);
 };
 
 #endif
