@@ -67,6 +67,7 @@ extern "C"
 #endif
 
 #include <util/message/default_message.h>
+#include <util/message/fmt_message_handler.h>
 
 enum PROCESS_TYPE
 {
