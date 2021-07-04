@@ -119,7 +119,7 @@ void bmct::error_trace(
 
   goto_tracet goto_trace;
   build_goto_trace(eq, smt_conv, goto_trace, is_compact_trace, msg);
-  std::string output_file = options.get_option("file-output");
+  std::string output_file = options.get_option("cex-output");
   if(output_file != "") {
     std::ofstream out(output_file);
     show_goto_trace(out, ns, goto_trace, msg);

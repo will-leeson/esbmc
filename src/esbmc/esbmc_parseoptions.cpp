@@ -190,8 +190,6 @@ void esbmc_parseoptionst::get_command_line_options(optionst &options)
     exit(1);
   }
 
-  options.cmdline(cmdline);
-
   /* graphML generation options check */
   if(cmdline.isset("witness-output"))
     options.set_option("witness-output", cmdline.getval("witness-output"));
@@ -374,6 +372,17 @@ void esbmc_parseoptionst::get_command_line_options(optionst &options)
 
 int esbmc_parseoptionst::doit()
 {
+  // Configure msg output
+
+  if(cmdline.isset("file-output"))
+  {
+    FILE *f = fopen(cmdline.getval("file-output"), "w+");
+    out = f;
+    err = f;
+  }
+  std::shared_ptr<message_handlert> handler = std::make_shared<fmt_message_handler>(out,err);
+  msg.add_message_handler(handler);
+
   //
   // Print a banner
   //
