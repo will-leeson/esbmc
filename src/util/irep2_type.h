@@ -580,7 +580,7 @@ public:
   {
     virtual const char *what() const throw()
     {
-      return "Sizeof infinite sized array encountered";
+      return "infinite sized array encountered";
     }
   };
 

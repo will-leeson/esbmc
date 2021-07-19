@@ -225,6 +225,14 @@ protected:
   void symex_assert();
 
   /**
+   *  Perform incremental SMT solving for assert and assume statements.
+   *  @param expr Expression that must be checked.
+   *  @param msg Textual message explaining assertion.
+   *  @return Return whether verification succeeded.
+   */
+  bool check_incremental(const expr2tc &expr, const std::string &msg);
+
+  /**
    *  Perform an assertion.
    *  Encodes an assertion that the expression claimed is always true. This
    *  adds the requirement that the current state guard is true as well.
@@ -232,6 +240,14 @@ protected:
    *  @param msg Textual message explaining assertion.
    */
   virtual void claim(const expr2tc &expr, const std::string &msg);
+
+  /**
+   *  Perform an assertion.
+   *  Adds to target an assertion that must be checked.
+   *  @param assertion Assertion that must be checked.
+   *  @param msg Textual message explaining assertion.
+   */
+  virtual void assertion(const expr2tc &assertion, const std::string &msg);
 
   /**
    *  Perform an assumption.

@@ -98,15 +98,15 @@ void timeout_handler(int)
 
 void esbmc_parseoptionst::set_verbosity_msg(messaget &message)
 {
-  int v = 8;
+  VerbosityLevel v = VerbosityLevel::Debug;
 
   if(cmdline.isset("verbosity"))
   {
-    v = atoi(cmdline.getval("verbosity"));
-    if(v < 0)
-      v = 0;
-    else if(v > 9)
-      v = 9;
+    v = (VerbosityLevel)atoi(cmdline.getval("verbosity"));
+    if(v < VerbosityLevel::None)
+      v = VerbosityLevel::None;
+    else if(v > VerbosityLevel::Debug)
+      v = VerbosityLevel::Debug;
   }
 
   message.set_verbosity((VerbosityLevel)v);
@@ -1219,7 +1219,7 @@ int esbmc_parseoptionst::do_base_case(
     break;
 
   case smt_convt::P_SATISFIABLE:
-    msg.result(fmt::format("\nBug found (k = {:d}", k_step));
+    msg.result(fmt::format("\nBug found (k = {:d})", k_step));
     return true;
 
   default:

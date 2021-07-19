@@ -2115,9 +2115,10 @@ expr2tc smt_convt::get(const expr2tc &expr)
     {
       if(extracting_from_array_tuple_is_error)
       {
-        std::runtime_error(
+        msg.error(
           "Fetching array elements inside tuples currently "
           "unimplemented, sorry");
+        abort();
       }
       return expr2tc(); // TODO: ??? This is horrible
     }

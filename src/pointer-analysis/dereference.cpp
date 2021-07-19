@@ -1499,6 +1499,7 @@ void dereferencet::construct_struct_ref_from_const_offset(
   oss << " argument to construct_struct_ref"
       << "\n";
   msg.error(oss.str());
+  abort();
 }
 
 void dereferencet::construct_struct_ref_from_dyn_offset(
