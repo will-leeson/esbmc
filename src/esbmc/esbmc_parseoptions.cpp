@@ -1676,10 +1676,11 @@ int esbmc_parseoptionst::do_bmc(bmct &bmc)
 }
 
 void esbmc_parseoptionst::help()
-{
-  msg.status(
+{  
+  default_message dmsg;
+  dmsg.status(
     fmt::format("\n* * *           ESBMC {}          * * *", ESBMC_VERSION));
   std::ostringstream oss;
   oss << cmdline.cmdline_options;
-  msg.status(oss.str());
+  dmsg.status(oss.str());
 }
