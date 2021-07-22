@@ -191,6 +191,8 @@ void esbmc_parseoptionst::get_command_line_options(optionst &options)
     exit(1);
   }
 
+  options.cmdline(cmdline);
+
   /* graphML generation options check */
   if(cmdline.isset("cex-output"))
     options.set_option("cex-output", cmdline.getval("cex-output"));
