@@ -1,0 +1,11 @@
+language: cpp
+compiler: gcc
+arch: arm64
+dist: focal
+os: linux
+sudo: true
+env:
+    - BUILD_TYPE=Debug
+
+script:
+  - ./scripts/build.sh
