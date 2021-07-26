@@ -1063,7 +1063,14 @@ smt_astt z3_convt::tuple_array_create(
   {
     z3::expr int_cte = z3_ctx.num_val(i, dom_sort);
     const z3_smt_ast *tmpast = to_solver_smt_ast<z3_smt_ast>(input_args[i]);
-    output = z3::store(output, int_cte, tmpast->a);
+    try
+    {
+      output = z3::store(output, int_cte, tmpast->a);
+    }
+    catch(z3::exception &z3)
+    {
+      // Do nothing
+    }
   }
 
   return new_ast(output, asort);
