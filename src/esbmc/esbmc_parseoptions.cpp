@@ -1518,6 +1518,7 @@ bool esbmc_parseoptionst::process_goto_program(
       bounded_loop_unroller unwind_loops(goto_functions);
       unwind_loops.run();
     }
+
     // do partial inlining
     if(!cmdline.isset("no-inlining"))
     {
@@ -1595,6 +1596,7 @@ bool esbmc_parseoptionst::process_goto_program(
 
       value_set_analysis.update(goto_functions);
     }
+
     // show it?
     if(cmdline.isset("show-loops"))
     {
