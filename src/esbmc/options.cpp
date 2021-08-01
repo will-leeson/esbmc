@@ -130,7 +130,7 @@ const struct group_opt_templ all_cmd_options[] = {
     {"unroll-loops", NULL, ""},
     {"no-slice", NULL, "do not remove unused equations"},
     {"no-unroll", NULL, "do not unroll bounded loops"},
-    {"slice-assumes", NULL, ""},
+    {"slice-assumes", NULL, "remove unused assume statements"},
     {"extended-try-analysis", NULL, ""},
     {"skip-bmc", NULL, ""}}},
   {"Incremental BMC",
@@ -267,7 +267,11 @@ const struct group_opt_templ all_cmd_options[] = {
      {"no-propagation", NULL, "disable constant propagation"},
      {"interval-analysis",
       NULL,
-      "enable interval analysis and add assumes to the program"}}},
+      "enable interval analysis and add assumes to the program"},
+     {"add-symex-value-sets",
+      NULL,
+      "enable value-set analysis and add assumes to the program during "
+      "symbolic execution"}}},
 
   {"DEBUG options",
    {// Print commit hash for current binary
