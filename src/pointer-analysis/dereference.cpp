@@ -500,11 +500,8 @@ expr2tc dereferencet::dereference(
     // the line. To make this a valid formula though, return a failed symbol,
     // so that this assignment gets a well typed free value.
     value = make_failed_symbol(type);
-    /*
-    HACK for intel
     // Produce assertions to check for invalid objects
     valid_check(value, guard, mode);
-    */
   }
   else if(mode == INTERNAL)
   {
