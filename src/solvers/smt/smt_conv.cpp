@@ -2178,6 +2178,15 @@ expr2tc smt_convt::get(const expr2tc &expr)
 
   // And simplify
   simplify(res);
+
+  // Hack
+  if(is_constant_int2t(res))
+  {
+    auto &hack = to_constant_int2t(res);
+    if(is_unsignedbv_type(hack.type))
+      if(hack.value.is_negative())
+        hack.value = hack.value.negate();
+  }
   return res;
 }
 
@@ -2197,9 +2206,9 @@ expr2tc smt_convt::get_by_ast(const type2tc &type, smt_astt a)
     return constant_floatbv2tc(fp_api->get_fpbv(a));
 
   default:
-    msg.error(fmt::format(
-      "Unimplemented type'd expression ({}) in smt get", type->type_id));
-    abort();
+    msg.warning(fmt::format(
+      "Unimplemented type'd expression. Returning empty type"));
+    return gen_zero(type);
   }
 }
 
@@ -2222,9 +2231,9 @@ expr2tc smt_convt::get_by_type(const expr2tc &expr)
     return tuple_api->tuple_get(expr);
 
   default:
-    msg.error(fmt::format(
-      "Unimplemented type'd expression ({}) in smt get", expr->type->type_id));
-    abort();
+    msg.warning(fmt::format(
+      "Unimplemented type'd expression. Returning empty type"));
+    return gen_zero(expr->type);
   }
 }
 
