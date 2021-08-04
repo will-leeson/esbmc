@@ -10,36 +10,28 @@ bool unsound_loop_unroller::runOnLoop(loopst &loop, goto_programt &goto_program)
   goto_programt::targett loop_exit = loop.get_original_loop_exit();
   loop_exit->make_skip();
 
-  /* TODO: If we want a sound version: loop_exit++ so we have the skip instruction
-  if(loop_exit != goto_program.instructions.begin())
-  {
-    goto_programt::targett t_before = loop_exit;
+  /* Here the Loop goto iteraction should be added if needed
+   * this is only needed if this class is combined with another
+   * unsound approach. Since this class is only used for bounded
+   * loops we do not need to worry. */
 
-    if(!t_before->is_goto() || !is_true(t_before->guard))
-    {
-      goto_programt::targett t_goto = goto_program.insert(loop_exit);
-
-      t_goto->make_goto(loop_exit);
-      t_goto->location = loop_exit->location;
-      t_goto->function = loop_exit->function;
-      t_goto->guard = gen_true_expr();
-    }
-  } */
   // If there is an inner control flow we need a map for it
   std::map<goto_programt::targett, unsigned> target_map;
   {
-    unsigned count = 0;
+    size_t count = 0;
     goto_programt::targett t = loop.get_original_loop_head();
     t->make_skip();
     t++; // get first instruction of the loop
     for(; t != loop_exit; t++, count++)
     {
-      assert(t != goto_program.instructions.end());
+      assert(
+        t != goto_program.instructions.end() && "Error, got invalid loop exit");
       target_map[t] = count;
     }
   }
 
   // we make k-1 copies, to be inserted before loop_exit
+  const messaget msg;
   goto_programt copies(msg);
   for(int i = 1; i < bound; i++)
   {
@@ -73,7 +65,6 @@ bool unsound_loop_unroller::runOnLoop(loopst &loop, goto_programt &goto_program)
   }
   // now insert copies before loop_exit
   goto_program.destructive_insert(loop_exit, copies);
-  //loops_to_remove.push_back(loop);
   return true;
 }
 
@@ -81,13 +72,13 @@ int bounded_loop_unroller::get_loop_bounds(loopst &loop)
 {
   /**
    * This looks for the following template
-   * 
+   *
    * z: symbol = k0
-   * 
+   *
    * a: IF !(symbol < k)
    * b: ... // code that only reads symbol
    * b: symbol++
-   * 
+   *
    * If this is matched properly then set
    * bound as k - k0 and return true
    */
@@ -165,6 +156,11 @@ int bounded_loop_unroller::get_loop_bounds(loopst &loop)
       if(x.target == symbol)
         return -1;
     }
+
+  int bound = k - k0;
+  if(bound <= 0 || bound > unroll_limit)
+    return 0;
+
   number_of_bounded_loops++;
-  return k - k0;
+  return bound;
 }
