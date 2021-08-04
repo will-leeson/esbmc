@@ -849,7 +849,7 @@ expr2tc member2t::do_simplify() const
     {
       s = to_constant_struct2t(source_value).datatype_members[no];
 
-    /*  assert(
+      /*  assert(
         is_pointer_type(type) ||
         base_type_eq(type, s->type, namespacet(contextt())));
         */
@@ -1376,12 +1376,12 @@ static expr2tc do_bit_munge_operation(
 
   val1 = opfunc(val1, val2);
 
-  // This has potentially become negative. Check the top bit.
-  #ifndef _WIN32
+// This has potentially become negative. Check the top bit.
+#ifndef _WIN32
   __uint128_t upper_bit = 1;
-  #else
+#else
   uint64_t upper_bit = 1;
-  #endif
+#endif
   upper_bit <<= (type->get_width() - 1);
   if(val1 & upper_bit && is_signedbv_type(type))
   {

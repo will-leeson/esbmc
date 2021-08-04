@@ -2206,8 +2206,8 @@ expr2tc smt_convt::get_by_ast(const type2tc &type, smt_astt a)
     return constant_floatbv2tc(fp_api->get_fpbv(a));
 
   default:
-    msg.warning(fmt::format(
-      "Unimplemented type'd expression. Returning empty type"));
+    msg.warning(
+      fmt::format("Unimplemented type'd expression. Returning empty type"));
     return gen_zero(type);
   }
 }
@@ -2231,8 +2231,8 @@ expr2tc smt_convt::get_by_type(const expr2tc &expr)
     return tuple_api->tuple_get(expr);
 
   default:
-    msg.warning(fmt::format(
-      "Unimplemented type'd expression. Returning empty type"));
+    msg.warning(
+      fmt::format("Unimplemented type'd expression. Returning empty type"));
     return gen_zero(expr->type);
   }
 }

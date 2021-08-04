@@ -312,8 +312,7 @@ void value_sett::get_value_set_rec(
 
   if(is_constant_expr(expr))
   {
-
-     if(is_constant_int2t(expr))
+    if(is_constant_int2t(expr))
     {
       constant_int2t ci = to_constant_int2t(expr);
       if(ci.value.is_zero())
@@ -329,7 +328,6 @@ void value_sett::get_value_set_rec(
       else
         insert(dest, unknown2tc(original_type), BigInt(0));
     }
-
 
     // Constant numbers aren't pointers. Null check is in the value set code
     // for symbols.

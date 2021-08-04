@@ -24,7 +24,7 @@ lessthanequal2tc goto_symex_statet::framet::process_stack_size(
   // Create two constants to define stack frame size and stack limit.
   BigInt f_size(stack_total);
   BigInt s_size(stack_limit);
-  
+
   constant_int2tc function_irep2(type_pool.get_uint64(), f_size);
   constant_int2tc limit_irep2(type_pool.get_uint64(), s_size);
 

@@ -387,7 +387,8 @@ int esbmc_parseoptionst::doit()
     out = f;
     err = f;
   }
-  std::shared_ptr<message_handlert> handler = std::make_shared<fmt_message_handler>(out,err);
+  std::shared_ptr<message_handlert> handler =
+    std::make_shared<fmt_message_handler>(out, err);
   msg.add_message_handler(handler);
 
   //
@@ -1526,7 +1527,6 @@ bool esbmc_parseoptionst::process_goto_program(
   optionst &options,
   goto_functionst &goto_functions)
 {
-
   try
   {
     namespacet ns(context);
@@ -1617,7 +1617,6 @@ bool esbmc_parseoptionst::process_goto_program(
 
       value_set_analysis.update(goto_functions);
     }
-
 
     // show it?
     if(cmdline.isset("show-loops"))

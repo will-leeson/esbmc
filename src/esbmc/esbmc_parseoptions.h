@@ -30,7 +30,8 @@ public:
   {
   }
 
-  ~esbmc_parseoptionst() {
+  ~esbmc_parseoptionst()
+  {
     close_file(out);
     if(out != err)
       close_file(err);
@@ -85,8 +86,10 @@ protected:
   FILE *err = stderr;
 
 private:
-  void close_file(FILE* f) {
-    if(f != stdout && f != stderr) {
+  void close_file(FILE *f)
+  {
+    if(f != stdout && f != stderr)
+    {
       fclose(f);
     }
   }

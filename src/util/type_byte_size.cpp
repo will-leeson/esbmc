@@ -96,7 +96,7 @@ BigInt type_byte_size_bits(const type2tc &type)
     return to_string_type(type).width * config.ansi_c.char_width;
 
   case type2t::vector_id:
-    {
+  {
     // Attempt to compute constant array offset. If we can't, we can't
     // reasonably return anything anyway, so throw.
     const vector_type2t &t2 = to_vector_type(type);
