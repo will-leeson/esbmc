@@ -1526,12 +1526,7 @@ bool esbmc_parseoptionst::process_goto_program(
   optionst &options,
   goto_functionst &goto_functions)
 {
-    // unwind loops
-    if(!cmdline.isset("no-unroll"))
-    {
-    bounded_loop_unroller unwind_loops(goto_functions, msg);
-    unwind_loops.check_and_run(options);
-    }
+
   try
   {
     namespacet ns(context);
@@ -1687,7 +1682,7 @@ int esbmc_parseoptionst::do_bmc(bmct &bmc)
 }
 
 void esbmc_parseoptionst::help()
-{  
+{
   default_message dmsg;
   dmsg.status(
     fmt::format("\n* * *           ESBMC {}          * * *", ESBMC_VERSION));
