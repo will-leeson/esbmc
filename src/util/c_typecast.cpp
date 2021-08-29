@@ -580,6 +580,19 @@ void c_typecastt::implicit_typecast(exprt &expr, const typet &type)
   typet src_type = follow_with_qualifiers(expr.type()),
         dest_type = follow_with_qualifiers(type);
 
+  if(src_type.is_array() && dest_type.is_array())
+  {
+    auto &arr = to_array_type(src_type);
+    auto &iarr = to_array_type(dest_type);
+
+    // HACK: This should check for incomplete array
+    /* This should handle incomplete arrays properly...
+     * for now this is solving fam initialization
+    */
+    if(arr.size() != iarr.size())
+      dest_type = src_type;
+  }
+
   implicit_typecast_followed(expr, src_type, dest_type);
 }
 
@@ -590,12 +603,15 @@ void c_typecastt::implicit_typecast(expr2tc &expr, const type2tc &type)
 
   implicit_typecast_followed(expr, src_type, dest_type);
 }
-
+#include <iostream>
 void c_typecastt::implicit_typecast_followed(
   exprt &expr,
   const typet &src_type,
   const typet &dest_type)
 {
+  if(src_type.is_incomplete_array() || dest_type.is_incomplete_array())
+    std::cout << "I am here\n";
+
   if(dest_type.id() == "pointer")
   {
     // special case: 0 == NULL
