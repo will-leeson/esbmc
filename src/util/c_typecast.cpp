@@ -587,9 +587,20 @@ void c_typecastt::implicit_typecast(exprt &expr, const typet &type)
 
     // HACK: This should check for incomplete array
     /* This should handle incomplete arrays properly...
-     * for now this is solving fam initialization
+     * for now this is solving fam  initialization
     */
-    if(arr.size() != iarr.size())
+    bool is_same_subtype = arr.subtype() == iarr.subtype();
+    bool is_size_one = false;
+    bool are_sizes_different = arr.size() != iarr.size();
+
+    if(arr.size().is_constant())
+    {
+      auto &value = to_constant_expr(arr.size());
+      BigInt bi(value.value().c_str(), 2);
+      is_size_one = bi.compare(1) == 0;
+    }
+
+    if(is_same_subtype && is_size_one && are_sizes_different)
       dest_type = src_type;
   }
 
