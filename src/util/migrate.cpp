@@ -110,10 +110,8 @@ type2tc migrate_type(const typet &type)
   }
   else if(type.id() == typet::t_vector)
   {
-    type2tc subtype;
+    type2tc subtype = migrate_type(type.subtype());
     expr2tc size((expr2t *)nullptr);
-
-    migrate_type(type.subtype());
 
     if(type.find(typet::a_size).id() == "infinity")
     {
