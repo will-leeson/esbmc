@@ -2305,9 +2305,6 @@ bool clang_c_convertert::get_cast_expr(
   case clang::CK_ToUnion:
     gen_typecast_to_union(expr, type);
     break;
-
-  case clang::CK_VectorSplat:
-    break;
   default:
   {
     std::ostringstream oss;
