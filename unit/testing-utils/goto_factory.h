@@ -7,7 +7,7 @@
 /**
  * @brief This class parses C inputs
  * and generates goto-functions
- *
+ * master
  */
 class goto_factory
 {
