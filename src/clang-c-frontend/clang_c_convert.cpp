@@ -27,7 +27,7 @@
 #include <unordered_set>
 
 namespace {
-  const std::unordered_set<std::string> ignored_extern( {"__tzname","__daylight", "tzname", "__timezone", "daylight", "hax", "timezone", "stderr", "stdout", "sys_errlist", "optarg", "stdin", "sys_nerr"} );
+  const std::unordered_set<std::string> ignored_extern( {"signgam", "__tzname","__daylight", "tzname", "__timezone", "daylight", "hax", "timezone", "stderr", "stdout", "sys_errlist", "optarg", "stdin", "sys_nerr"} );
 }
 
 
