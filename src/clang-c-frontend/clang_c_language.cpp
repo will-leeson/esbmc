@@ -25,6 +25,11 @@ Author: Daniel Kroening, kroening@cs.cmu.edu
 #include <util/c_link.h>
 #include <util/message/format.h>
 
+namespace {
+
+  std::unordered_map<std::string, bool> extern_symbols;
+}
+
 languaget *new_clang_c_language(const messaget &msg)
 {
   return new clang_c_languaget(msg);
@@ -232,9 +237,18 @@ bool clang_c_languaget::typecheck(
 {
   contextt new_context(msg);
 
-  clang_c_convertert converter(new_context, ASTs, msg);
+  clang_c_convertert converter(new_context, ASTs, msg, extern_symbols);
   if(converter.convert())
     return true;
+
+   for(auto &x : extern_symbols)
+    {
+      if(!x.second)
+      {
+        msg.error(fmt::format("Extern symbol {} was never defined", x.first));
+        return true;
+      }
+  }
 
   clang_c_adjust adjuster(new_context, msg);
   if(adjuster.adjust())

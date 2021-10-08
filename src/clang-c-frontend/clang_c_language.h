@@ -10,6 +10,7 @@ Author:
 #define CLANG_C_FRONTEND_CLANG_C_LANGUAGE_H_
 
 #include <util/language.h>
+#include <unordered_map>
 
 #define __STDC_LIMIT_MACROS
 #define __STDC_FORMAT_MACROS

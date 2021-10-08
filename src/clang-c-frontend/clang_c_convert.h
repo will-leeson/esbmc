@@ -7,6 +7,7 @@
 #include <util/context.h>
 #include <util/namespace.h>
 #include <util/std_types.h>
+#include <unordered_map>
 
 // Forward dec, to avoid bringing in clang headers
 namespace clang
@@ -44,7 +45,8 @@ public:
   clang_c_convertert(
     contextt &_context,
     std::vector<std::unique_ptr<clang::ASTUnit>> &_ASTs,
-    const messaget &msg);
+    const messaget &msg,
+    std::unordered_map<std::string, bool> &extern_symbols);
   virtual ~clang_c_convertert() = default;
 
   bool convert();
@@ -55,6 +57,7 @@ protected:
   namespacet ns;
   std::vector<std::unique_ptr<clang::ASTUnit>> &ASTs;
   const messaget &msg;
+  std::unordered_map<std::string, bool> &extern_symbols;
 
   unsigned int current_scope_var_num;
 

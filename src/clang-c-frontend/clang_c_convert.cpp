@@ -24,16 +24,24 @@
 #include <util/std_code.h>
 #include <util/std_expr.h>
 #include <util/message/format.h>
+#include <unordered_set>
+
+namespace {
+  const std::unordered_set<std::string> ignored_extern( {"__tzname","__daylight", "tzname", "__timezone", "daylight", "hax", "timezone", "stderr", "stdout", "sys_errlist", "optarg", "stdin", "sys_nerr"} );
+}
+
 
 clang_c_convertert::clang_c_convertert(
   contextt &_context,
   std::vector<std::unique_ptr<clang::ASTUnit>> &_ASTs,
-  const messaget &msg)
+  const messaget &msg,
+  std::unordered_map<std::string, bool> &extern_symbols)
   : ASTContext(nullptr),
     context(_context),
     ns(context),
     ASTs(_ASTs),
     msg(msg),
+    extern_symbols(extern_symbols),
     current_scope_var_num(1),
     sm(nullptr),
     current_functionDecl(nullptr)
@@ -468,7 +476,22 @@ bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
   }
 
   // Externs shouldn't be added to symbol table
-  if(symbol.is_extern && !vd.hasInit()) return false;
+  if(!ignored_extern.count(name) && symbol.is_extern && !vd.hasInit())
+  {
+    auto exists = extern_symbols.count(name) != 0;
+    if(!exists)
+    {
+      extern_symbols[name] = false;
+    }
+
+    return false;
+  } else
+  {
+    extern_symbols[name] = true;
+  }
+
+
+
 
   // We have to add the symbol before converting the initial assignment
   // because we might have something like 'int x = x + 1;' which is

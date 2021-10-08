@@ -22,6 +22,11 @@ Author: Daniel Kroening, kroening@cs.cmu.edu
 #include <clang-cpp-frontend/expr2cpp.h>
 #include <regex>
 
+
+namespace {
+
+  std::unordered_map<std::string, bool> extern_symbols;
+}
 languaget *new_clang_cpp_language(const messaget &msg)
 {
   return new clang_cpp_languaget(msg);
@@ -59,7 +64,7 @@ bool clang_cpp_languaget::typecheck(
 {
   contextt new_context(message_handler);
 
-  clang_cpp_convertert converter(new_context, ASTs, message_handler);
+  clang_cpp_convertert converter(new_context, ASTs, message_handler, extern_symbols);
   if(converter.convert())
     return true;
 

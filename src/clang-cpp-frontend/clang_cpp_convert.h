@@ -12,7 +12,8 @@ public:
   clang_cpp_convertert(
     contextt &_context,
     std::vector<std::unique_ptr<clang::ASTUnit>> &_ASTs,
-    const messaget &msg);
+    const messaget &msg,
+    std::unordered_map<std::string, bool> &extern_symbols);
   virtual ~clang_cpp_convertert() = default;
 
 protected:
