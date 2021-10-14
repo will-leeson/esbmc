@@ -241,15 +241,17 @@ bool clang_c_languaget::typecheck(
   if(converter.convert())
     return true;
 
+  bool found_error = false;
    for(auto &x : extern_symbols)
     {
       if(!x.second)
       {
         msg.error(fmt::format("Extern symbol {} was never defined", x.first));
-        return true;
+        found_error = true;
       }
   }
 
+  if(found_error) return false;
   clang_c_adjust adjuster(new_context, msg);
   if(adjuster.adjust())
     return true;

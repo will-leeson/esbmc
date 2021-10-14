@@ -27,7 +27,7 @@
 #include <unordered_set>
 
 namespace {
-  const std::unordered_set<std::string> ignored_extern( {"signgam", "__tzname","__daylight", "tzname", "__timezone", "daylight", "hax", "timezone", "stderr", "stdout", "sys_errlist", "optarg", "stdin", "sys_nerr"} );
+  const std::unordered_set<std::string> ignored_extern( {"signgam", "__tzname","__daylight", "tzname", "__timezone", "daylight", "hax", "timezone", "stderr", "stdout", "sys_errlist", "optarg", "stdin", "sys_nerr", "__security_cookie", "_FSnan_C", "_Eps_C", "_FDenorm_C", "_FZero_C", "_LSnan_C", "_Hugeval_C", "_LXbig_C", "_FNan_C", "_FRteps_C", "_Snan_C", "_HUGE", "_Denorm_C", "_Inf_C", "_Nan_C", "_FInf_C", "_LDenorm_C", "_LInf_C", "_LNan_C", "_Rteps_C", "_LRteps_C", "_FEps_C", "HUGE", "_LEps_C", "_Zero_C", "_Xbig_C", "_LZero_C", "_FXbig_C"} );
 }
 
 
