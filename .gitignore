@@ -10,3 +10,4 @@ out
 .vscode
 .idea
 cmake-build*
+tags

@@ -1,13 +1,9 @@
 name: Build All Solvers
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: [push, pull_request]
+
 jobs:
+
   intel-release:
     name: Build Linux Release (SEND THIS!!!)
     runs-on: ubuntu-20.04
