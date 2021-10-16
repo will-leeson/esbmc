@@ -1,23 +1,24 @@
-# The ESBMC model checker
+# ESBMC 
+## the Efficient SMT-based Bounded Model Checker
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/d14d06e975644907a2eb9521e09ccfe4)](https://app.codacy.com/gh/esbmc/esbmc?utm_source=github.com&utm_medium=referral&utm_content=esbmc/esbmc&utm_campaign=Badge_Grade_Dashboard)
-![Lint Code Base](https://github.com/esbmc/esbmc/workflows/Lint%20Code%20Base/badge.svg)
-![Health Checks](https://github.com/esbmc/esbmc/workflows/Health%20Checks/badge.svg)
 ![Build All Solvers](https://github.com/esbmc/esbmc/workflows/Build%20All%20Solvers/badge.svg)
 [![codecov](https://codecov.io/gh/esbmc/esbmc/branch/master/graph/badge.svg)](https://codecov.io/gh/esbmc/esbmc)
 
 
+ESBMC is an open-source context-bounded model checker for verifying single- and multithreaded C/C++ programs. It can verify both predefined safety properties (e.g., bounds check, pointer safety, overflow) and user-defined program assertions automatically. 
 
-
-ESBMC (the Efficient SMT-based Bounded Model Checker) is a mature, permissively licensed open-source context-bounded model checker for verifying single- and multithreaded C/C++ programs. It can verify both predefined safety properties (e.g., bounds check, pointer safety, overflow) and user-defined program assertions automatically. ESBMC supports the Clang compiler as its C/C++ frontend, IEEE floating-point arithmetic for a variety of SMT solvers, and implements a state-of-the-art k-induction algorithm.
-
-To build ESBMC, please see the [BUILDING](https://github.com/esbmc/esbmc/blob/master/BUILDING.md) file. For getting started, we recommend first reading some of the background material / publications, to understand exactly what this technique can provide, for example our SV-COMP tool papers, which are available at [online](https://ssvlab.github.io/esbmc/publications.html).
+ESBMC supports the Clang compiler as its C/C++ frontend, IEEE floating-point arithmetic for a variety of SMT solvers, and implements a state-of-the-art k-induction algorithm.
 
 The cannonical public location of ESBMCs source is on github:
 
     https://github.com/esbmc/esbmc
 
 While our main website is esbmc.org
+
+### Getting Started
+
+- [Building from Source](docs/BUILDING.md)
+- How to Contribute
 
 ### Features
 
@@ -69,63 +70,6 @@ We'd be extremely happy to receive contributions to make ESBMC better (under the
 
 ### Getting started
 
-Currently, we don't have a good guide for getting started with ESBMC, although we hope to improve this in the future. Examining some of the benchmarks in the SV-COMP competition (http://sv-comp.sosy-lab.org/) would be a good start, using the esbmc command line for the relevant competition year.
-
-### Contributing to the code base
-
-Here are some steps to contributing to the code base:
-
-  1. Compile and execute esbmc. [Building](https://github.com/esbmc/esbmc/blob/master/BUILDING.md)
-  1. Fork the repository
-  1. Clone the repository git clone git@github.com:YOURNAME/esbmc.git
-  1. Create a branch from the master branch (default branch)
-  1. Make your changes
-  1. Check the formatting with clang-format (use Clang 9)
-  1. Push your changes to your branch
-  1. Create a Pull Request targeting the master branch
-
-Here is an example to prepare a pull request (PR)
-
-
-A) Make sure that you are in the `master` branch and your fork is updated.
-
-```
-git checkout master
-git fetch upstream
-git pull --rebase upstream master
-git push origin HEAD:master
-```
-
-Note that if you have not yet setup the `upstream`, you need to type the following command:
-
-```
-git remote add upstream https://github.com/esbmc/esbmc
-```
-
-B) Create a local branch (e.g., `model-pthread-create`) from the `master` branch:
-
-```
-git checkout -b model-pthread-equal --track master
-```
-
-C) Add your changes via commits to the local branch:
-
-```
-git add path-to-file/file.cpp
-git commit -sm "added opertational model for pthread_equal"
-```
-
-Note that you can check your changes via `git status`.
-Note also that every PR should contain at least two test cases
-to check your implementation: one successful and one failed test case.
-
-D) Push your changes in the local branch to the ESBMC repository:
-
-```
-git push origin model-pthread-equal
-```
-
-New contributors can check issues marked with `good first issue` by clicking [here](https://github.com/esbmc/esbmc/contribute).
 
 ### Documentation
 
