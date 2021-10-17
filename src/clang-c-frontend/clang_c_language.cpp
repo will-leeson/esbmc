@@ -228,7 +228,7 @@ bool clang_c_languaget::typecheck(
   clang_c_convertert converter(new_context, ASTs, msg, extern_symbols);
   if(converter.convert())
     return true;
-
+  /*
   bool found_error = false;
    for(auto &x : extern_symbols)
     {
@@ -239,7 +239,9 @@ bool clang_c_languaget::typecheck(
       }
   }
 
-  if(found_error) return false;
+  */
+
+  //  if(found_error) return false;
   clang_c_adjust adjuster(new_context, msg);
   if(adjuster.adjust())
     return true;

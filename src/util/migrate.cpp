@@ -1,3 +1,4 @@
+#include <sys/socket.h>
 #include <util/c_types.h>
 #include <util/config.h>
 #include <util/irep2_utils.h>
@@ -21,6 +22,9 @@
 // migrate_expr, and it's a huge task to fix them all up to pass a namespace
 // down.
 namespacet *migrate_namespace_lookup = nullptr;
+
+// TODO: Remove me!
+#include <iostream>
 
 static std::map<irep_idt, BigInt> bin2int_map_signed, bin2int_map_unsigned;
 
@@ -533,7 +537,13 @@ expr2tc sym_name_to_symbol(irep_idt init, type2tc type)
 
     char *endatptr, *endexmptr;
     level1_num = strtol(atstr.c_str(), &endatptr, 10);
-    assert(endatptr != atstr.c_str());
+    // TODO: add me here
+    if(endatptr == atstr.c_str())
+      {
+        std::cerr << "Symbol " << thename << " was not found (extern?)" << std::endl;
+        abort();
+      }
+    
     thread_num = strtol(exmstr.c_str(), &endexmptr, 10);
     assert(endexmptr != exmstr.c_str());
   }
