@@ -1,4 +1,4 @@
-#include <sys/socket.h>
+
 #include <util/c_types.h>
 #include <util/config.h>
 #include <util/irep2_utils.h>
