@@ -474,25 +474,7 @@ bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
     symbol.value = gen_zero(t, true);
     symbol.value.zero_initializer(true);
   }
-
-  // Externs shouldn't be added to symbol table
-  if(!ignored_extern.count(name) && symbol.is_extern && !vd.hasInit())
-  {
-    auto exists = extern_symbols.count(name) != 0;
-    if(!exists)
-    {
-      extern_symbols[name] = false;
-    }
-
-    return false;
-  } else
-  {
-    extern_symbols[name] = true;
-  }
-
-
-
-
+  
   // We have to add the symbol before converting the initial assignment
   // because we might have something like 'int x = x + 1;' which is
   // completely wrong but allowed by the language
@@ -3092,8 +3074,6 @@ symbolt *clang_c_convertert::move_symbol_to_context(symbolt &symbol)
       if(symbol.type.is_not_nil() && !s->type.is_not_nil())
         s->swap(symbol);
     }
-    else if(s->is_extern && !symbol.is_extern)
-      s->swap(symbol);
   }
 
   return s;
