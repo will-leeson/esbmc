@@ -541,11 +541,11 @@ expr2tc sym_name_to_symbol(irep_idt init, type2tc type)
     if(endatptr == atstr.c_str())
       {
         std::cerr << "Symbol " << thename << " was not found (extern?)" << std::endl;
-        abort();
+        //abort();
       }
     
     thread_num = strtol(exmstr.c_str(), &endexmptr, 10);
-    assert(endexmptr != exmstr.c_str());
+    //assert(endexmptr != exmstr.c_str());
   }
 
   if(target_level == symbol2t::level1)
