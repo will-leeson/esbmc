@@ -204,7 +204,7 @@ def get_result_string(the_result):
 esbmc_path = "./esbmc "
 
 # ESBMC default commands: this is the same for every submission
-esbmc_dargs = "--no-div-by-zero-check --force-malloc-success --state-hashing "
+esbmc_dargs = "--no-div-by-zero-check --force-malloc-success --state-hashing --add-symex-value-sets "
 esbmc_dargs += "--no-align-check --k-step 2 --floatbv --unlimited-k-steps "
 
 import re
@@ -252,7 +252,10 @@ def get_command_line(strat, prop, arch, benchmark, concurrency, dargs):
     command_line += "--no-pointer-check --no-bounds-check --memory-leak-check --memory-cleanup-check --no-assertions "
     strat = "incr"
   elif prop == Property.reach:
-    command_line += "--no-pointer-check --no-bounds-check --interval-analysis "
+    if concurrency:
+      command_line += "--no-pointer-check --no-bounds-check "
+    else:
+      command_line += "--no-pointer-check --no-bounds-check --interval-analysis "
   else:
     print("Unknown property")
     exit(1)
