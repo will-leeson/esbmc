@@ -112,7 +112,6 @@ int delete_key(__ESBMC_thread_key *l)
 }
 
 /************************** Thread creation and exit **************************/
-
 void pthread_start_main_hook(void)
 {
   __ESBMC_atomic_begin();
