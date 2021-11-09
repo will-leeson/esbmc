@@ -231,7 +231,6 @@ def get_command_line(strat, prop, arch, benchmark, concurrency, dargs):
 
   if concurrency:
     command_line += " --no-por "
-    print("Found pthread benchmark!") # For debugging
     #command_line += "--no-slice " # TODO: Witness validation is only working without slicing
 
   # Add witness arg
