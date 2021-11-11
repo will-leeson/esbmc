@@ -243,8 +243,8 @@ void interval_domaint::assume_rec(
       integer_intervalt &rhs_i = int_map[rhs_identifier];
       lhs_i.meet(rhs_i);
       rhs_i = lhs_i;
-      if(rhs_i.is_bottom())
-        make_bottom();
+      //if(rhs_i.is_bottom())
+      //  make_bottom();
     }
   }
 }
