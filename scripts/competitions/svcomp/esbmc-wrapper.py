@@ -211,7 +211,7 @@ import re
 def check_if_benchmark_contains_pthread(benchmark):
   with open(benchmark, "r") as f:
     for line in f:
-      if re.search("pthread_create", line.strip()):        
+      if re.search("pthread_create", line.strip()):
         return True
   return False
 
@@ -252,9 +252,9 @@ def get_command_line(strat, prop, arch, benchmark, concurrency, dargs):
     strat = "incr"
   elif prop == Property.reach:
     if concurrency:
-      command_line += "--no-pointer-check --no-bounds-check "
+      command_line += "--no-pointer-check --no-bounds-check --goto-unwind --unlimited-goto-unwind "
     else:
-      command_line += "--no-pointer-check --no-bounds-check --interval-analysis "
+      command_line += "--no-pointer-check --no-bounds-check --interval-analysis --goto-unwind --unlimited-goto-unwind "
   else:
     print("Unknown property")
     exit(1)
