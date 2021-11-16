@@ -6,7 +6,7 @@ jobs:
   sanitizer:
     strategy:
       matrix:
-        SANITIZER_MODE: [ASAN, TSAN, MSAN, LSAN, UBSAN]
+        SANITIZER_MODE: [ASAN, TSAN, LSAN, UBSAN]
     name: Test esbmc with Sanitizer
     runs-on: ubuntu-20.04
     steps:
