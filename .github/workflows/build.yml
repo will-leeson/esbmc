@@ -50,12 +50,6 @@ jobs:
     - name: Run tests
       run: cd build && ninja || echo "fail" # TODO: Eventually this will be removed
 
-  windows-clone:
-    name: Check if Windows users can checkout this version
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v1
-
   build-arm:
     name: Build ESBMC with Boolector (ARM64)
     runs-on: ['self-hosted', 'Linux', 'ARM64']
