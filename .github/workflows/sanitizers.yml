@@ -4,8 +4,9 @@ on: [push, pull_request]
 jobs:
 
   sanitizer:
-    env:
-      SANITIZER_MODE: [ASAN, TSAN, MSAN, LSAN, UBSAN]
+    strategy:
+      matrix:
+        SANITIZER_MODE: [ASAN, TSAN, MSAN, LSAN, UBSAN]
     name: Test esbmc with Sanitizer
     runs-on: ubuntu-20.04
     steps:
@@ -21,7 +22,7 @@ jobs:
     - name: Setup boolector
       run: git clone --depth=1 --branch=3.2.1 https://github.com/boolector/boolector && cd boolector && ./contrib/setup-lingeling.sh && ./contrib/setup-btor2tools.sh && ./configure.sh --prefix $PWD/../boolector-release && cd build && make -j4 && make install
     - name: Configure CMake
-      run: mkdir build && cd build && CC=../clang/bin/clang CXX=../clang/bin/clang++ cmake .. -GNinja -DREGRESSION_CORE_ONLY=ON -DCMAKE_BUILD_TYPE=Sanitizer -DSANITIZER_TYPE=$SANITIZER_MODE -DClang_DIR=$PWD/../clang -DLLVM_DIR=$PWD/../clang -DENABLE_SOLIDITY_FRONTEND=On -DBoolector_DIR=$PWD/../boolector-release
+      run: mkdir build && cd build && CC=../clang/bin/clang CXX=../clang/bin/clang++ cmake .. -GNinja -DREGRESSION_CORE_ONLY=ON -DCMAKE_BUILD_TYPE=Sanitizer -DSANITIZER_TYPE=${{ matrix.SANITIZER_MODE }} -DClang_DIR=$PWD/../clang -DLLVM_DIR=$PWD/../clang -DENABLE_SOLIDITY_FRONTEND=On -DBoolector_DIR=$PWD/../boolector-release
     - name: Build ESBMC
       run: cd build && ninja
     - name: Run tests
