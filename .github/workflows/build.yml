@@ -46,7 +46,7 @@ jobs:
     - name: Get current folder and files
       run: pwd && ls
     - name: Configure CMake
-      run: mkdir build && cd build && CC=../clang/bin/clang CXX=../clang/bin/clang++ cmake .. -GNinja -DENABLE_CLANG_TIDY=On -DClang_DIR=$PWD/../clang -DLLVM_DIR=$PWD/../clang
+      run: mkdir build && cd build && CC=../clang/bin/clang CXX=../clang/bin/clang++ cmake .. -GNinja -DENABLE_IREP_OPTIMIZATION=OFF -DENABLE_CLANG_TIDY=On -DClang_DIR=$PWD/../clang -DLLVM_DIR=$PWD/../clang
     - name: Run tests
       run: cd build && ninja || echo "fail" # TODO: Eventually this will be removed
 
