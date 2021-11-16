@@ -37,6 +37,8 @@ endif()
 foreach(regression IN LISTS REGRESSIONS)
     if(NOT WIN32) # FUTURE: configure suites using an option
         set(MODES CORE KNOWNBUG FUTURE THOROUGH)
+    elseif(REGRESSION_CORE_ONLY)
+        set(MODES CORE KNOWNBUG)
     else()
         set(MODES CORE KNOWNBUG FUTURE)
     endif()
