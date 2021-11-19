@@ -10,9 +10,11 @@ Author: Daniel Kroening, kroening@kroening.com
 #define CPROVER_NUMBERING_H
 
 #include <cassert>
+#include <cstddef>
 #include <map>
 #include <unordered_map>
 #include <vector>
+#include <cstddef>
 
 template <typename T>
 class numbering

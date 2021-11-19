@@ -9,8 +9,7 @@
 
 
 
-
-ESBMC (the Efficient SMT-based Bounded Model Checker) is a mature, permissively licensed open-source context-bounded model checker for verifying single- and multithreaded C/C++ programs. It can verify both predefined safety properties (e.g., bounds check, pointer safety, overflow) and user-defined program assertions automatically. ESBMC supports the Clang compiler as its C/C++ frontend, IEEE floating-point arithmetic for a variety of SMT solvers, and implements a state-of-the-art k-induction algorithm.
+ESBMC (the Efficient SMT-based Bounded Model Checker) is a mature, permissively licensed open-source context-bounded model checker for verifying single- and multithreaded C/C++ programs. It can verify both predefined safety properties (e.g., bounds check, pointer safety, overflow) and user-defined program assertions automatically. ESBMC supports the Clang compiler as its C/C++ frontend, IEEE floating-point arithmetic for various SMT solvers, implements the Solidity grammar production rules as its Solidity frontend and state-of-the-art incremental BMC and k-induction algorithms.
 
 To build ESBMC, please see the [BUILDING](https://github.com/esbmc/esbmc/blob/master/BUILDING.md) file. For getting started, we recommend first reading some of the background material / publications, to understand exactly what this technique can provide, for example our SV-COMP tool papers, which are available at [online](https://ssvlab.github.io/esbmc/publications.html).
 
@@ -59,6 +58,7 @@ ESBMC is a fork of CBMC v2.9 (2008), the C Bounded Model Checker. The primary di
 * CBMC focuses on SAT-based encodings of unrolled programs while ESBMC targets SMT-based encodings.
 * CBMC's concurrency support is an entirely symbolic encoding of a concurrent program in one SAT formulae, while ESBMC explores each interleaving individually.
 * CBMC uses a modified C parser written by James Roskind and a C++ parser based on OpenC++, while ESBMC relies on the Clang front-end.
+* ESBMC implements the Solidity grammar production rules as its Solidity frontend, while CBMC does not implement a Solidity frontend.
 * CBMC implements k-induction, requiring three different calls: to generate the CFG, to annotate the program, and to verify it, whereas ESBMC handles the whole process in a single call. Additionally, CBMC does not have a forward condition to check if all states were reached and relies on a limited loop unwinding.
 * ESBMC adds some additional types to the program's internal representation.
 
