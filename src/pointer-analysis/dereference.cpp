@@ -1550,7 +1550,7 @@ void dereferencet::construct_struct_ref_from_const_offset(
 
     expr2tc *bytes =
       extract_bytes_from_array(value, type->get_width() / 8, div);
-    stitch_together_from_byte_array(value, type, bytes);
+    stitch_together_from_byte_array(value, type->get_width() / 8, bytes);
     return;
   }
 
