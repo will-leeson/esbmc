@@ -167,6 +167,7 @@ bool clang_c_convertert::get_decl(const clang::Decl &decl, exprt &new_expr)
       comp.type().width(width.cformat());
       comp.type().set("#bitfield", true);
       comp.type().subtype() = t;
+      comp.set_is_unnamed_bitfield(fd.isUnnamedBitfield());
     }
 
     new_expr.swap(comp);
@@ -195,6 +196,7 @@ bool clang_c_convertert::get_decl(const clang::Decl &decl, exprt &new_expr)
       comp.type().width(width.cformat());
       comp.type().set("#bitfield", true);
       comp.type().subtype() = t;
+      comp.set_is_unnamed_bitfield(fd.getAnonField()->isUnnamedBitfield());
     }
 
     new_expr.swap(comp);
@@ -474,25 +476,7 @@ bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
     symbol.value = gen_zero(t, true);
     symbol.value.zero_initializer(true);
   }
-
-  // Externs shouldn't be added to symbol table
-  if(!ignored_extern.count(name) && symbol.is_extern && !vd.hasInit())
-  {
-    auto exists = extern_symbols.count(name) != 0;
-    if(!exists)
-    {
-      extern_symbols[name] = false;
-    }
-
-    return false;
-  } else
-  {
-    extern_symbols[name] = true;
-  }
-
-
-
-
+  
   // We have to add the symbol before converting the initial assignment
   // because we might have something like 'int x = x + 1;' which is
   // completely wrong but allowed by the language
@@ -1712,7 +1696,9 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
       {
         // if it is an struct/union, we should skip padding
         if(t.is_struct() || t.is_union())
-          if(to_struct_union_type(t).components()[i].get_is_padding())
+          if(
+            to_struct_union_type(t).components()[i].get_is_padding() ||
+            to_struct_union_type(t).components()[i].get_is_unnamed_bitfield())
             continue;
 
         // Get the value being initialized
@@ -3027,8 +3013,8 @@ void clang_c_convertert::get_presumed_location(
   if(!sm)
     return;
 
-  clang::SourceLocation SpellingLoc = sm->getSpellingLoc(loc);
-  PLoc = sm->getPresumedLoc(SpellingLoc);
+  clang::SourceLocation FileLoc = sm->getFileLoc(loc);
+  PLoc = sm->getPresumedLoc(FileLoc);
 }
 
 void clang_c_convertert::set_location(

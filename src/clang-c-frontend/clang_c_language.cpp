@@ -26,11 +26,6 @@ Author: Daniel Kroening, kroening@cs.cmu.edu
 #include <util/message/format.h>
 #include <util/filesystem.h>
 
-namespace {
-
-  std::unordered_map<std::string, bool> extern_symbols;
-}
-
 languaget *new_clang_c_language(const messaget &msg)
 {
   return new clang_c_languaget(msg);
@@ -43,14 +38,14 @@ clang_c_languaget::clang_c_languaget(const messaget &msg) : languaget(msg)
    * ever extracted before. This will guarantee that the same path will be used
    * during a run. And no more than one is required anyway */
   static auto p =
-    file_operations::get_unique_tmp_path("esbmc-headers-%%%%-%%%%-%%%%");
+    file_operations::create_tmp_dir("esbmc-headers-%%%%-%%%%-%%%%");
   // Build the compile arguments
-  build_compiler_args(std::move(p));
+  build_compiler_args(p.path());
   // Dump clang headers on the temporary folder
-  dump_clang_headers(p);
+  dump_clang_headers(p.path());
 }
 
-void clang_c_languaget::build_compiler_args(const std::string &&tmp_dir)
+void clang_c_languaget::build_compiler_args(const std::string &tmp_dir)
 {
   compiler_args.emplace_back("clang-tool");
 

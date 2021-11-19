@@ -67,10 +67,11 @@ protected:
   virtual void force_file_type();
 
   void dump_clang_headers(const std::string &tmp_dir);
-  void build_compiler_args(const std::string &&tmp_dir);
+  void build_compiler_args(const std::string &tmp_dir);
 
   std::vector<std::string> compiler_args;
   std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
+  std::unordered_map<std::string, bool> extern_symbols;
 };
 
 languaget *new_clang_c_language(const messaget &msg);
