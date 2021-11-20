@@ -114,7 +114,7 @@ int fpurge(FILE *stream)
   // just return nondet
   return nondet_int();
 }
-
+/*
 ssize_t read(int fildes, void *buf, size_t nbyte)
 {
 __ESBMC_HIDE:;
@@ -127,7 +127,7 @@ __ESBMC_HIDE:;
 
   return nread;
 }
-
+*/
 int fgetc(FILE *stream)
 {
 __ESBMC_HIDE:;
