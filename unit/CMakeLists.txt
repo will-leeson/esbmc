@@ -1,6 +1,10 @@
 message(STATUS "Testing enabled")
 include(TestConfiguration)
 
+if(NOT ENABLE_UNIT_TEST)
+    return()
+endif()
+
 add_subdirectory(testing-utils)
 add_subdirectory(goto-programs)
 add_subdirectory(big-int)

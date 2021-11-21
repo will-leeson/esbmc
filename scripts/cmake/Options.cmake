@@ -19,8 +19,6 @@ Also, you can set some variables which are not defined directly here:
 option(ENABLE_WERROR "All warnings are treated as errors during compilation (default: OFF)" OFF)
 option(BUILD_STATIC "Build ESBMC in static mode (default: OFF)" OFF)
 option(BUILD_DOC "Build ESBMC documentation" OFF)
-option(ENABLE_REGRESSION "Add Regressions Tests (default: OFF)" OFF)
-option(REGRESSION_CORE_ONLY "Only add CORE tests (default: OFF)" OFF)
 option(ENABLE_COVERAGE "Generate Coverage Report (default: OFF)" OFF)
 option(ENABLE_OLD_FRONTEND "Enable flex/bison language frontend (default: OFF)" OFF)
 option(ENABLE_SOLIDITY_FRONTEND "Enable Solidity language frontend (default: OFF)" OFF)
@@ -35,12 +33,20 @@ option(ENABLE_YICES "Use Yices solver (default: OFF)" OFF)
 option(ENABLE_CVC4 "Use CVC4 solver (default: OFF)" OFF)
 
 #############################
+# TESTING
+#############################
+option(BUILD_TESTING "Enable Tests (default: ON)" ON)
+option(ENABLE_UNIT_TEST "Enable unit tests (default: ON)" ON)
+option(ENABLE_REGRESSION "Add Regressions Tests (default: OFF)" OFF)
+option(REGRESSION_CORE_ONLY "Only add CORE tests (default: OFF)" OFF)
+option(ENABLE_FUZZER "Add fuzzing targets (default: OFF)" OFF)
+option(ENABLE_CSMITH "Add csmith Tests (default: OFF) (depends: ENABLE_REGRESSION)" OFF)
+
+#############################
 # OTHERS
 #############################
 option(ENABLE_LIBM "Use libm from c2goto (default: ON)" ON)
-option(ENABLE_FUZZER "Add fuzzing targets (default: OFF)" OFF)
 option(ENABLE_CLANG_TIDY "Activate clang tidy analysis (default: OFF)" OFF)
-option(ENABLE_CSMITH "Add csmith Tests (default: OFF) (depends: ENABLE_REGRESSION)" OFF)
 option(ENABLE_IREP_OPTIMIZATION "Don't preprocess irep2 headers (default: ON)" ON)
 
 #############################
