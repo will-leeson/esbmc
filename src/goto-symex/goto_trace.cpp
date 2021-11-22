@@ -316,6 +316,8 @@ void violation_graphml_goto_trace(
         edget new_edge;
         new_edge.thread_id = std::to_string(step.thread_nr);
         new_edge.assumption = assignment;
+
+	if(!options.get_bool_option("memory-cleanup-check"))
         new_edge.start_line = get_line_number(
           verification_file,
           std::atoi(step.pc->location.get_line().c_str()),
