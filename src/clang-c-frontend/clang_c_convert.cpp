@@ -416,6 +416,7 @@ bool clang_c_convertert::get_struct_union_class_methods(
   return false;
 }
 
+#include <iostream>
 bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
 {
   // Get type
@@ -469,10 +470,21 @@ bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
     symbol.value.zero_initializer(true);
   }
 
+  if((symbol.type.is_array() && symbol.is_extern)) {
+    auto size = to_array_type(symbol.type).size();
+    if(size.is_constant() ) {
+      auto t = to_constant_expr(size).value();
+      auto number = std::stoi(t.c_str());
+      if(number == 1) return false;
+    }
+  }
+
   // We have to add the symbol before converting the initial assignment
   // because we might have something like 'int x = x + 1;' which is
   // completely wrong but allowed by the language
   symbolt &added_symbol = *move_symbol_to_context(symbol);
+
+  //if(id == "c:@R_Range1") added_symbol.dump();
 
   code_declt decl(symbol_expr(added_symbol));
 
@@ -2974,6 +2986,11 @@ symbolt *clang_c_convertert::move_symbol_to_context(symbolt &symbol)
     {
       if(symbol.type.is_not_nil() && !s->type.is_not_nil())
         s->swap(symbol);
+    }
+    else if(s->is_extern && !symbol.is_extern)
+    {
+      s->swap(symbol);
+      s->type.swap(symbol.type);
     }
   }
 
