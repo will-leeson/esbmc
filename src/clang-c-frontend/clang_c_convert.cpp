@@ -470,12 +470,12 @@ bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
     symbol.value.zero_initializer(true);
   }
 
-  if((symbol.type.is_array() && symbol.is_extern)) {
+  if((symbol.type.is_array() && symbol.is_extern) && symbol.id  != "c:@sys_errlist") {
     auto size = to_array_type(symbol.type).size();
     if(size.is_constant() ) {
-      auto t = to_constant_expr(size).value();
-      auto number = std::stoi(t.c_str());
-      if(number == 1) return false;
+      BigInt number(to_constant_expr(size).value().c_str(), 2);
+      if(number.to_uint64() == 1)
+        return false;
     }
   }
 
