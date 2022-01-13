@@ -81,7 +81,18 @@ bool clang_c_convertert::convert_top_level_decl()
     if(get_decl(*ASTContext->getTranslationUnitDecl(), dummy_decl))
       return true;
   }
-
+  /*
+  // Handle extern symbols here MERGE
+  static int counter = 0;
+  msg.debug(fmt::format("I am merging the symbols {}", counter++));
+  for( auto x : symbols_to_add)
+  {
+    exprt dummy;
+    symbolt *s = context.find_symbol(x.id);
+    if(s == nullptr)
+      add_later(x, dummy);
+  }
+*/
   assert(current_functionDecl == nullptr);
 
   return false;
@@ -416,7 +427,59 @@ bool clang_c_convertert::get_struct_union_class_methods(
   return false;
 }
 
-#include <iostream>
+bool clang_c_convertert::foo(
+  const clang::VarDecl &vd,
+  symbolt symbol,
+  exprt &new_expr)
+{
+  // We have to add the symbol before converting the initial assignment
+  // because we might have something like 'int x = x + 1;' which is
+  // completely wrong but allowed by the language
+  symbolt &added_symbol = *move_symbol_to_context(symbol);
+
+  //if(id == "c:@R_Range1") added_symbol.dump();
+
+  code_declt decl(symbol_expr(added_symbol));
+
+  if(vd.hasInit())
+  {
+    exprt val;
+    if(get_expr(*vd.getInit(), val))
+      return true;
+
+    // Get type
+    typet t;
+    if(get_type(vd.getType(), t))
+      return true;
+    gen_typecast(ns, val, t);
+
+    added_symbol.value = val;
+    decl.operands().push_back(val);
+  }
+
+  locationt location_begin;
+  get_location_from_decl(vd, location_begin);
+  decl.location() = location_begin;
+
+  new_expr = decl;
+  return false;
+}
+
+bool clang_c_convertert::skip_extern_symbol(const symbolt symbol)
+{
+  if(symbol.is_extern && symbol.type.is_array())
+  {
+    auto size = to_array_type(symbol.type).size();
+    if(size.is_constant())
+    {
+      BigInt number(to_constant_expr(size).value().c_str(), 2);
+      if(number.to_uint64() == 1)
+        return true;
+    }
+  }
+  return false;
+}
+
 bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
 {
   // Get type
@@ -470,40 +533,13 @@ bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
     symbol.value.zero_initializer(true);
   }
 
-  if((symbol.type.is_array() && symbol.is_extern) && symbol.id  != "c:@sys_errlist") {
-    auto size = to_array_type(symbol.type).size();
-    if(size.is_constant() ) {
-      BigInt number(to_constant_expr(size).value().c_str(), 2);
-      if(number.to_uint64() == 1)
-        return false;
-    }
-  }
-
-  // We have to add the symbol before converting the initial assignment
-  // because we might have something like 'int x = x + 1;' which is
-  // completely wrong but allowed by the language
-  symbolt &added_symbol = *move_symbol_to_context(symbol);
-
-  //if(id == "c:@R_Range1") added_symbol.dump();
-
-  code_declt decl(symbol_expr(added_symbol));
-
-  if(vd.hasInit())
+  if(!skip_extern_symbol(symbol))
+    return foo(vd, symbol, new_expr);
+  else
   {
-    exprt val;
-    if(get_expr(*vd.getInit(), val))
-      return true;
-
-    gen_typecast(ns, val, t);
-
-    added_symbol.value = val;
-    decl.operands().push_back(val);
+    symbols_to_add.push_back(symbol);
+    return false;
   }
-
-  decl.location() = location_begin;
-
-  new_expr = decl;
-  return false;
 }
 
 bool clang_c_convertert::get_function(const clang::FunctionDecl &fd, exprt &)
@@ -2976,6 +3012,8 @@ symbolt *clang_c_convertert::move_symbol_to_context(symbolt &symbol)
   }
   else
   {
+    if(symbol.id == "c:@foo")
+      msg.debug("Got here 2");
     // types that are code means functions
     if(s->type.is_code())
     {
