@@ -45,8 +45,7 @@ public:
   clang_c_convertert(
     contextt &_context,
     std::vector<std::unique_ptr<clang::ASTUnit>> &_ASTs,
-    const messaget &msg,
-    std::unordered_map<std::string, bool> &extern_symbols);
+    const messaget &msg);
   virtual ~clang_c_convertert() = default;
 
   bool convert();
@@ -63,6 +62,14 @@ public:
  */
   static void
   gen_typecast_to_union(exprt &dest, const typet &type, const messaget &msg);
+  void set_symbols_to_add(std::vector<symbolt> &v)
+  {
+    symbols_to_add = v;
+  }
+  std::vector<symbolt> get_symbols_to_add()
+  {
+    return symbols_to_add;
+  }
 
 protected:
   clang::ASTContext *ASTContext;
@@ -70,7 +77,6 @@ protected:
   namespacet ns;
   std::vector<std::unique_ptr<clang::ASTUnit>> &ASTs;
   const messaget &msg;
-  std::unordered_map<std::string, bool> &extern_symbols;
 
   unsigned int current_scope_var_num;
 
@@ -179,6 +185,10 @@ protected:
   const clang::Decl *get_top_FunctionDecl_from_Stmt(const clang::Stmt &stmt);
 
   void gen_typecast_to_union(exprt &dest, const typet &type);
+
+  bool foo(const clang::VarDecl &vd, symbolt symbol, exprt &new_expr);
+  bool skip_extern_symbol(const symbolt symbol);
+  std::vector<symbolt> symbols_to_add;
 };
 
 #endif /* CLANG_C_FRONTEND_CLANG_C_CONVERT_H_ */

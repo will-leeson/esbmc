@@ -233,7 +233,8 @@ bool clang_c_languaget::typecheck(
 {
   contextt new_context(msg);
 
-  clang_c_convertert converter(new_context, ASTs, msg, extern_symbols);
+  clang_c_convertert converter(new_context, ASTs, msg);
+  converter.set_symbols_to_add(extern_symbols);
   if(converter.convert())
     return true;
   /*
@@ -249,7 +250,8 @@ bool clang_c_languaget::typecheck(
 
   */
 
-  //  if(found_error) return false;
+  extern_symbols = converter.get_symbols_to_add();
+
   clang_c_adjust adjuster(new_context, msg);
   if(adjuster.adjust())
     return true;
@@ -278,8 +280,38 @@ bool clang_c_languaget::preprocess(
   return false;
 }
 
+#include <util/expr_util.h>
+bool clang_c_languaget::add_later(contextt &context, symbolt symbol)
+{
+  exprt dummy;
+  symbolt *s = context.find_symbol(symbol.id);
+  if(s == nullptr)
+  {
+    if(context.move(symbol, s))
+    {
+      msg.error(fmt::format(
+        "Couldn't add symbol {} to symbol table\n{}", symbol.name, symbol));
+      abort();
+    }
+  }
+  else
+  {
+    return true;
+  }
+  /*
+  symbolt &added_symbol = *s;
+  code_declt decl(symbol_expr(added_symbol));
+  decl.location() = symbol.location;
+  dummy = decl;
+  */
+  return false;
+}
+
 bool clang_c_languaget::final(contextt &context, const messaget &msg)
 {
+  for(auto x : extern_symbols)
+    add_later(context, x);
+
   add_cprover_library(context, msg);
   return clang_main(context, msg);
 }

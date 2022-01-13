@@ -71,7 +71,9 @@ protected:
 
   std::vector<std::string> compiler_args;
   std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
-  std::unordered_map<std::string, bool> extern_symbols;
+
+  std::vector<symbolt> extern_symbols;
+  bool add_later(contextt &ctx, symbolt symbol);
 };
 
 languaget *new_clang_c_language(const messaget &msg);

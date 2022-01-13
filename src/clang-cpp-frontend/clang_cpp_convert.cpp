@@ -22,9 +22,8 @@
 clang_cpp_convertert::clang_cpp_convertert(
   contextt &_context,
   std::vector<std::unique_ptr<clang::ASTUnit>> &_ASTs,
-  const messaget &msg,
-  std::unordered_map<std::string, bool> &extern_symbols)
-  : clang_c_convertert(_context, _ASTs, msg, extern_symbols)
+  const messaget &msg)
+  : clang_c_convertert(_context, _ASTs, msg)
 {
 }
 
