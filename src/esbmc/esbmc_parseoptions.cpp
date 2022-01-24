@@ -98,7 +98,7 @@ void timeout_handler(int)
 
 void esbmc_parseoptionst::set_verbosity_msg(messaget &message)
 {
-  VerbosityLevel v = VerbosityLevel::Debug;
+  VerbosityLevel v = VerbosityLevel::Status;
 
   if(cmdline.isset("verbosity"))
   {
@@ -228,6 +228,7 @@ void esbmc_parseoptionst::get_command_line_options(optionst &options)
   msg.status(fmt::format("Target: {}", format_target()));
 
   options.cmdline(cmdline);
+  set_verbosity_msg(msg);
 
   /* graphML generation options check */
   if(cmdline.isset("cex-output"))
@@ -1427,6 +1428,7 @@ bool esbmc_parseoptionst::get_goto_program(
       // Parsing
       if(parse())
         return true;
+
       if(cmdline.isset("parse-tree-too") || cmdline.isset("parse-tree-only"))
       {
         assert(language_files.filemap.size());
@@ -1525,8 +1527,8 @@ void esbmc_parseoptionst::preprocessing()
     }
 #ifdef ENABLE_OLD_FRONTEND
     std::ostringstream oss;
-    if(c_preprocess(filename, oss, false, *get_message_handler()))
-      error("PREPROCESSING ERROR");
+    if(c_preprocess(filename, oss, false, msg))
+      msg.error("PREPROCESSING ERROR");
     msg.status(oss.str());
 #endif
   }

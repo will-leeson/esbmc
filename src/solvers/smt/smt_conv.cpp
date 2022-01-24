@@ -79,10 +79,7 @@ smt_convt::smt_convt(
   names.emplace_back("pointer_object");
   names.emplace_back("pointer_offset");
 
-  struct_type2t *tmp =
-    new struct_type2t(members, names, names, "pointer_struct");
-  pointer_type_data = tmp;
-  pointer_struct = type2tc(tmp);
+  pointer_struct = {members, names, names, "pointer_struct"};
 
   pointer_logic.emplace_back();
 
@@ -96,17 +93,12 @@ smt_convt::smt_convt(
   members.push_back(get_uint_type(config.ansi_c.pointer_width));
   names.emplace_back("start");
   names.emplace_back("end");
-  tmp = new struct_type2t(members, names, names, "addr_space_type");
-  addr_space_type_data = tmp;
-  addr_space_type = type2tc(tmp);
+  addr_space_type = {members, names, names, "addr_space_type"};
 
-  addr_space_arr_type =
-    type2tc(new array_type2t(addr_space_type, expr2tc(), true));
+  addr_space_arr_type = {addr_space_type, expr2tc(), true};
 
   addr_space_data.emplace_back();
 
-  machine_int = type2tc(new signedbv_type2t(config.ansi_c.int_width));
-  machine_uint = type2tc(new unsignedbv_type2t(config.ansi_c.int_width));
   machine_ptr = type2tc(new unsignedbv_type2t(config.ansi_c.pointer_width));
 
   // Pick a modelling array to shoehorn initialization data into. Because
@@ -147,9 +139,6 @@ void smt_convt::delete_all_asts()
 
 void smt_convt::smt_post_init()
 {
-  machine_int_sort = mk_int_bv_sort(config.ansi_c.int_width);
-  machine_uint_sort = mk_int_bv_sort(config.ansi_c.int_width);
-
   boolean_sort = mk_bool_sort();
 
   init_addr_space_array();
@@ -343,9 +332,9 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     if(is_struct_type(arr.subtype) || is_pointer_type(arr.subtype))
     {
       // Domain sort may be mesed with:
-      smt_sortt domain = int_encoding
-                           ? machine_int_sort
-                           : mk_int_bv_sort(calculate_array_domain_width(arr));
+      smt_sortt domain = mk_int_bv_sort(
+        int_encoding ? config.ansi_c.int_width
+                     : calculate_array_domain_width(arr));
 
       a = tuple_array_create_despatch(flat_expr, domain);
     }
@@ -2205,6 +2194,10 @@ expr2tc smt_convt::get_by_ast(const type2tc &type, smt_astt a)
   case type2t::floatbv_id:
     return constant_floatbv2tc(fp_api->get_fpbv(a));
 
+  case type2t::struct_id:
+  case type2t::pointer_id:
+    return tuple_api->tuple_get(type, a);
+
   default:
     msg.warning(
       fmt::format("Unimplemented type'd expression. Returning empty type"));
@@ -2265,7 +2258,7 @@ expr2tc smt_convt::get_array(const expr2tc &expr)
 const struct_union_data &smt_convt::get_type_def(const type2tc &type) const
 {
   return (is_pointer_type(type))
-           ? *pointer_type_data
+           ? *pointer_struct
            : dynamic_cast<const struct_union_data &>(*type.get());
 }
 
@@ -2509,25 +2502,27 @@ void smt_convt::rewrite_ptrs_to_structs(type2tc &type)
   // Type may contain pointers; replace those with the structure equivalent.
   // Ideally the real solver will never see pointer types.
   // Create a delegate that recurses over all subtypes, replacing pointers
-  // as we go. Extra scaffolding is to work around the fact we can't refer
-  // to replace_w_ptr until after it's been defined, ho hum.
-  type2t::subtype_delegate *delegate = nullptr;
-  auto replace_w_ptr = [this, &delegate](type2tc &e) {
-    if(is_pointer_type(e))
-    {
-      // Replace this field of the expr with a pointer struct :O:O:O:O
-      e = pointer_struct;
-    }
-    else
-    {
-      // Recurse
-      e->Foreach_subtype(*delegate);
-    }
-  };
+  // as we go.
+  struct
+  {
+    const struct_type2tc &pointer_struct;
 
-  type2t::subtype_delegate del_wrap(std::ref(replace_w_ptr));
-  delegate = &del_wrap;
-  type->Foreach_subtype(replace_w_ptr);
+    void operator()(type2tc &e) const
+    {
+      if(is_pointer_type(e))
+      {
+        // Replace this field of the expr with a pointer struct :O:O:O:O
+        e = pointer_struct;
+      }
+      else
+      {
+        // Recurse
+        e->Foreach_subtype(*this);
+      }
+    }
+  } delegate = {pointer_struct};
+
+  type->Foreach_subtype(delegate);
 }
 
 // Default behaviours for SMT AST's

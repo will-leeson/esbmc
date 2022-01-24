@@ -810,19 +810,9 @@ public:
   std::list<pointer_logict> pointer_logic;
   /** Constant struct representing the implementation of the pointer type --
    *  i.e., the struct type that pointers get translated to. */
-  type2tc pointer_struct;
-  /** Raw pointer to the type2t in pointer_struct, for convenience. */
-  const struct_type2t *pointer_type_data; // ptr of pointer_struct
-  /** The type of the machine integer type. */
-  type2tc machine_int;
-  /** The type of the machine unsigned integer type. */
-  type2tc machine_uint;
+  struct_type2tc pointer_struct;
   /** The type of the machine integer that can store a pointer. */
   type2tc machine_ptr;
-  /** The SMT sort of this machines integer type. */
-  smt_sortt machine_int_sort;
-  /** The SMT sort of this machines unsigned integer type. */
-  smt_sortt machine_uint_sort;
   /** Sort for booleans. For fast access. */
   smt_sortt boolean_sort;
   /** Whether we are encoding expressions in integer mode or not. */
@@ -857,11 +847,9 @@ public:
   std::list<unsigned int> addr_space_sym_num;
   /** Type of the address space allocation records. Currently a start address
    *  integer and an end address integer. */
-  type2tc addr_space_type;
-  /** Pointer to type2t object in addr_space_type, for convenience */
-  const struct_type2t *addr_space_type_data;
+  struct_type2tc addr_space_type;
   /** Type of the array of address space allocation records. */
-  type2tc addr_space_arr_type;
+  array_type2tc addr_space_arr_type;
   /** List of address space allocation sizes. A map from the object number to
    *  the nubmer of bytes allocated. In a list to support pushing and
    *  popping. */

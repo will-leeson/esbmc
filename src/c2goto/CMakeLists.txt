@@ -14,18 +14,23 @@ else()
   set(multiarch "/usr/include/${CMAKE_LIBRARY_ARCHITECTURE}")
 endif()
 
-set (clib32_config clib32.c --32 --fixedbv -D__ESBMC_FIXEDBV)
-set (clib64_config clib64.c --64 --fixedbv -D__ESBMC_FIXEDBV)
-set (clib32f_config clib32_fp.c --32 --floatbv)
-set (clib64f_config clib64_fp.c --64 --floatbv)
-
-set (inputs clib32_config clib64_config clib32f_config clib64f_config)
+if (ESBMC_BUNDLE_LIBC)
+  set (clib32_config clib32.c --32 --fixedbv -D__ESBMC_FIXEDBV)
+  set (clib64_config clib64.c --64 --fixedbv -D__ESBMC_FIXEDBV)
+  set (clib32f_config clib32_fp.c --32 --floatbv)
+  set (clib64f_config clib64_fp.c --64 --floatbv)
+  set (inputs clib32_config
+              clib64_config
+              clib32f_config
+              clib64f_config
+      )
+endif()
 
 function(mangle_clib output)
   set(result "")
-   file(GLOB c2goto_library_files
+   file(GLOB c2goto_library_files CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/library/*.c")
-  file(GLOB c2goto_libm_files
+  file(GLOB c2goto_libm_files CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/library/libm/*.c")
   foreach(in_f ${ARGN})
     set (in_f "${${in_f}}")
@@ -52,7 +57,7 @@ function(mangle_clib output)
       )
 
     add_custom_command(OUTPUT ${out_file}
-      COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/flail.py ${out_goto} ${out_file}
+      COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/flail.py -o ${out_file} ${out_goto}
       DEPENDS ${out_goto} ${CMAKE_SOURCE_DIR}/scripts/flail.py
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Converting libc model ${out_goto} to data"
@@ -61,6 +66,14 @@ function(mangle_clib output)
 
     list(APPEND result ${out_file})
   endforeach()
+  mangle(${CMAKE_CURRENT_BINARY_DIR}/libc.c ${CMAKE_CURRENT_SOURCE_DIR}/library
+         WILDCARD *.c SINGLE PREFIX esbmc_libc_ MACRO ESBMC_FLAIL
+         ACC_HEADERS_INTO ${CMAKE_CURRENT_BINARY_DIR}/libc.h)
+  mangle(${CMAKE_CURRENT_BINARY_DIR}/libm.c ${CMAKE_CURRENT_SOURCE_DIR}/library/libm
+         WILDCARD *.c SINGLE PREFIX esbmc_libm_ MACRO ESBMC_FLAIL
+         ACC_HEADERS_INTO ${CMAKE_CURRENT_BINARY_DIR}/libm.h)
+  list(APPEND result ${CMAKE_CURRENT_BINARY_DIR}/libc.c
+                     ${CMAKE_CURRENT_BINARY_DIR}/libm.c)
   set(${output} "${result}" PARENT_SCOPE)
 endfunction()
 
@@ -69,5 +82,8 @@ mangle_clib(mangled_files ${inputs})
 add_library(clibs ${mangled_files} cprover_library.cpp)
 target_include_directories(clibs
     PRIVATE ${Boost_INCLUDE_DIRS}
+    PRIVATE ${CMAKE_BINARY_DIR}/src
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
 )
-target_link_libraries(clibs fmt::fmt)
+target_link_libraries(clibs c2gotoheaders fmt::fmt)
+set_target_properties(clibs PROPERTIES PRIVATE_HEADER "${CMAKE_CURRENT_BINARY_DIR}/libc.h;${CMAKE_CURRENT_BINARY_DIR}/libm.h")

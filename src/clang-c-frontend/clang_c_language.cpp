@@ -35,20 +35,8 @@ languaget *new_clang_c_language(const messaget &msg)
 
 clang_c_languaget::clang_c_languaget(const messaget &msg) : languaget(msg)
 {
-#ifdef ESBMC_CLANG_HEADER_DIR
-  build_compiler_args(ESBMC_CLANG_HEADER_DIR);
-#else
-  /* About the path being static:
-   * the function dump_clang_headers has a static member checking if it was
-   * ever extracted before. This will guarantee that the same path will be used
-   * during a run. And no more than one is required anyway */
-  static auto p =
-    file_operations::create_tmp_dir("esbmc-headers-%%%%-%%%%-%%%%");
   // Build the compile arguments
-  build_compiler_args(p.path());
-  // Dump clang headers on the temporary folder
-  dump_clang_headers(p.path());
-#endif
+  build_compiler_args(clang_headers_path());
 }
 
 void clang_c_languaget::build_compiler_args(const std::string &tmp_dir)
@@ -103,6 +91,9 @@ void clang_c_languaget::build_compiler_args(const std::string &tmp_dir)
 
   for(auto const &def : config.ansi_c.defines)
     compiler_args.push_back("-D" + def);
+
+  if(msg.get_verbosity() >= VerbosityLevel::Debug)
+    compiler_args.emplace_back("-v");
 
   compiler_args.emplace_back("-target");
   compiler_args.emplace_back(config.ansi_c.target.to_string());
@@ -312,7 +303,7 @@ bool clang_c_languaget::final(contextt &context, const messaget &msg)
   for(auto x : extern_symbols)
     add_later(context, x);
 
-  add_cprover_library(context, msg);
+  add_cprover_library(context, msg, this);
   return clang_main(context, msg);
 }
 
@@ -324,6 +315,7 @@ std::string clang_c_languaget::internal_additions()
 void __ESBMC_assume(_Bool);
 void __ESBMC_assert(_Bool, const char *);
 _Bool __ESBMC_same_object(const void *, const void *);
+void __ESBMC_yield();
 void __ESBMC_atomic_begin();
 void __ESBMC_atomic_end();
 void __ESBMC_init_var(void*);
