@@ -1921,8 +1921,6 @@ expr2tc dereferencet::stitch_together_from_byte_array(
   const expr2tc &offset,
   const guardt & /* guard */)
 {
-  assert(num_bytes >= 0);
-
   // Corner case, 0 bytes can mean that we are dealing with a FAM
   num_bytes = num_bytes ? num_bytes : 1;
 
