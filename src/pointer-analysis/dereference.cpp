@@ -1129,6 +1129,19 @@ void dereferencet::construct_from_const_struct_offset(
       // is supposed to point at.
       // If user is seeking a reference to this substruct, a different method
       // should have been called (construct_struct_ref_from_const_offset).
+      if(is_array_type(it))
+      {
+        // FAM
+        // This access is in the bounds of this member, but isn't at the start.
+        // XXX that might be an alignment error.
+        expr2tc memb = member2tc(it, value, struct_type.member_names[i]);
+        constant_int2tc new_offs(pointer_type2(), int_offset - m_offs);
+
+        // Extract.
+        build_reference_rec(memb, new_offs, type, guard, mode);
+        value = memb;
+        return;
+      }
       assert(is_struct_type(it));
       assert(!is_struct_type(type));
       i++;
@@ -1908,7 +1921,10 @@ expr2tc dereferencet::stitch_together_from_byte_array(
   const expr2tc &offset,
   const guardt & /* guard */)
 {
-  assert(num_bytes != 0);
+  assert(num_bytes >= 0);
+
+  // Corner case, 0 bytes can mean that we are dealing with a FAM
+  num_bytes = num_bytes ? num_bytes : 1;
 
   /* TODO: check array bounds, (alignment?) */
 
