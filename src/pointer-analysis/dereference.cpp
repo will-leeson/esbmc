@@ -1131,6 +1131,7 @@ void dereferencet::construct_from_const_struct_offset(
       // should have been called (construct_struct_ref_from_const_offset).
       if(is_array_type(it))
       {
+        msg.warning("Can't verify upper-bound of FAM!");
         // FAM
         // This access is in the bounds of this member, but isn't at the start.
         // XXX that might be an alignment error.
@@ -1272,6 +1273,12 @@ void dereferencet::construct_from_dyn_struct_offset(
     expr2tc lower_bound = greaterthanequal2tc(bits_offset, field_offs);
     expr2tc upper_bound = lessthan2tc(bits_offset, field_top);
     expr2tc field_guard = and2tc(lower_bound, upper_bound);
+    // This breaks FAM
+    if(is_array_type(it) && to_array_type(it).fam())
+    {
+      msg.warning("Dynamic index for FAM member detected. Upper bound will not be verified...");
+      field_guard = lower_bound;
+    }
 
     if(is_struct_type(it))
     {
@@ -2168,6 +2175,15 @@ void dereferencet::check_data_obj_access(
   const guardt &guard)
 {
   assert(!is_array_type(value));
+
+  // Check for FAM struct
+  if(is_struct_type(value->type))
+  {
+     auto &v = to_struct_type(value->type);
+      auto last = v.members.back();
+      if (is_array_type(last) && to_array_type(last).fam())
+        return;
+  }
 
   expr2tc offset = typecast2tc(pointer_type2(), src_offset);
   unsigned int data_sz = type_byte_size_bits(value->type).to_uint64();
