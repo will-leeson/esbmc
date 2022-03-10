@@ -40,3 +40,5 @@ target_link_libraries(util_esbmc irep2 default_message fmt::fmt ${Boost_LIBRARIE
 
 add_subdirectory(message)
 target_link_libraries(algorithms gotoprograms)
+
+add_subdirectory(dataflow)
