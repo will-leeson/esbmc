@@ -1,2 +1,2 @@
-add_library(dataflow dataflow.cpp)
+add_library(dataflow dataflow.cpp available_expressions.cpp)
 target_link_libraries(dataflow algorithms)

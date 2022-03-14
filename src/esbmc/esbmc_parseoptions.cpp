@@ -56,6 +56,7 @@ extern "C"
 #include <util/symbol.h>
 #include <util/time_stopping.h>
 #include <util/message/format.h>
+#include <util/dataflow/available_expressions.h>
 
 #ifndef _WIN32
 #include <sys/wait.h>
@@ -1560,6 +1561,18 @@ bool esbmc_parseoptionst::process_goto_program(
       bounded_loop_unroller unwind_loops(goto_functions, unroll_limit);
       unwind_loops.run();
     }
+
+    available_expressions_dataflow dataflow_alg(goto_functions);
+    dataflow_alg.run();
+    for(auto it = goto_functions.function_map.begin();
+          it != goto_functions.function_map.end(); it++)
+      for(auto itt = it->second.body.instructions.begin();
+          itt !=  it->second.body.instructions.end(); itt++)
+          {
+          dataflow_alg.entry_instructions(*it, itt);
+          //abort();
+
+          }
 
     // do partial inlining
     if(!cmdline.isset("no-inlining"))
