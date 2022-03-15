@@ -165,6 +165,9 @@ void clang_c_languaget::build_compiler_args(const std::string &tmp_dir)
   // Ignore ctype defined by the system
   compiler_args.emplace_back("-D__NO_CTYPE");
 
+  // Ignore ctype defined by the system
+  compiler_args.emplace_back("-D__ESBMC_alloca=__builtin_alloca");
+
   if(config.ansi_c.target.is_macos())
   {
     compiler_args.push_back("-D_EXTERNALIZE_CTYPE_INLINES_");
