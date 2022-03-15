@@ -512,14 +512,16 @@ expr2tc dereferencet::dereference(
     src = typecast2tc(type2tc(new pointer_type2t(get_empty_type())), src);
 
   type2tc type = to_type;
-
   // collect objects dest may point to
   value_setst::valuest points_to_set;
-
   dereference_callback.get_value_set(src, points_to_set);
 
   // now build big case split
   // only "good" objects
+
+  if(is_struct_type(type)) {
+    msg.warning("FAM dereference!");
+  }
 
   expr2tc value;
 
@@ -1093,6 +1095,13 @@ void dereferencet::construct_from_array(
     unsigned int num_bytes = compute_num_bytes_to_extract(
       replaced_dyn_offset, type_byte_size_bits(type).to_uint64());
 
+    if(!num_bytes)
+      {
+        msg.warning("FAM detected, extracting the entire array on deref");
+        // Are we handling a FAM? Extract everything
+        num_bytes = compute_num_bytes_to_extract(offset, type_byte_size_bits(value->type).to_uint64());
+      }
+
     // Converting offset to bytes for byte extracting
     expr2tc offset_bytes = div2tc(offset->type, offset, gen_ulong(8));
     simplify(offset_bytes);
@@ -1200,6 +1209,44 @@ void dereferencet::construct_from_const_struct_offset(
       // is supposed to point at.
       // If user is seeking a reference to this substruct, a different method
       // should have been called (construct_struct_ref_from_const_offset).
+      if(is_array_type(it))
+      {
+        // Array of size 0 in a struct, means FAM
+        msg.warning("FAM in deref");
+        // TODO: Check for allignment.
+        // GET THE VALUES
+        expr2tc memb = member2tc(it, value, struct_type.member_names[i]);
+        constant_int2tc new_offs(pointer_type2(), int_offset - m_offs);
+
+        /* CAN WE CHECK FOR OVER READS?
+         *
+         * Global initializations are not handled by the goto_check
+         * code, here we try to get the size of the value assigned for
+         * it
+        */
+        if(is_symbol2t(value) && mode == READ)
+          {
+          auto fam = ns.lookup(to_symbol2t(value).thename);
+          //assert(fam.is_struct());
+          auto last_operand = to_array_type(fam.value.operands().back().type()).size();
+          BigInt size(to_constant_expr(last_operand).get_value().as_string().c_str(), 2);
+          auto limit = size * type->get_width();
+          if((new_offs->value + type->get_width()) > limit) {
+            dereference_failure(
+                                "pointer dereference",
+                                fmt::format("Invalid read from FAM with offset {}. FAM contains {} elements", new_offs->value / type->get_width(), size),
+                                guard);
+
+          }
+        }
+
+
+        // Extract.
+        build_reference_rec(memb, new_offs, type, guard, mode);
+        value = memb;
+
+        return;
+      }
       assert(is_struct_type(it));
       assert(!is_struct_type(type));
       i++;
@@ -1323,6 +1370,21 @@ void dereferencet::construct_from_dyn_struct_offset(
 
     // Compute some kind of guard
     BigInt field_size = type_byte_size_bits(it);
+
+    // Lets compute field size manually for fam :)
+    if(
+      is_array_type(it) &&
+      (to_array_type(it).array_size->expr_id != expr2t::constant_int_id ||
+       !to_array_type(it).get_width()))
+    {
+      auto fam = ns.lookup(to_symbol2t(value).thename);
+      auto last_operand = to_array_type(fam.value.operands().back().type()).size();
+      BigInt quantity(to_constant_expr(last_operand).get_value().as_string().c_str(), 2);
+      auto base_type_width = type_byte_size_bits(to_array_type(it).subtype);
+      field_size = quantity * base_type_width;
+
+      msg.debug(fmt::format("Adding field size: {}, quantity: {}, base_type: {}, offs: {}", field_size, quantity, base_type_width, offs));
+    }
 
     // Round up to word size
     expr2tc field_offset = constant_int2tc(offset->type, offs);
@@ -1499,12 +1561,22 @@ void dereferencet::construct_struct_ref_from_const_offset_array(
   unsigned int struct_offset = intref.value.to_uint64();
   for(const type2tc &target_type : structtype.members)
   {
+    unsigned n_bits = type_byte_size_bits(target_type).to_uint64();
     expr2tc target;
     if(is_array_type(target_type))
-    {
-      target = stitch_together_from_byte_array(
-        target_type, value, gen_ulong(struct_offset), guard);
-    }
+      {
+        // FAM? Copy everything else
+      if(!n_bits)
+        n_bits = type_byte_size_bits(value->type).to_uint64() - struct_offset;
+
+      
+      // If it is still 0, then this mean that we havent allocated any space for the FAM
+      if(!n_bits)
+        target = expr2tc();
+      else
+        target = stitch_together_from_byte_array(
+          target_type, value, gen_ulong(struct_offset), guard);
+      }
     else
     {
       target = value; // The byte array;
@@ -1968,6 +2040,9 @@ expr2tc dereferencet::stitch_together_from_byte_array(
   expr2tc offset_bits,
   const guardt & /* guard */)
 {
+  // Corner case, 0 bytes can mean that we are dealing with a FAM
+  //assert(num_bytes);
+
   /* TODO: check array bounds, (alignment?) */
   assert(is_array_type(byte_array));
   assert(to_array_type(byte_array->type).subtype->get_width() == 8);
@@ -2260,6 +2335,32 @@ void dereferencet::check_data_obj_access(
   // which has the same effect.
   add2tc add(access_sz_e->type, offset, access_sz_e);
   greaterthan2tc gt(add, data_sz_e);
+
+   // Check for FAM struct
+  if(is_struct_type(value->type))
+  {
+    // Here we are checking for a dynamic index of a FAM!
+    auto &v = to_struct_type(value->type);
+    auto last = v.members.back();
+    if(is_array_type(last) && !to_array_type(last).get_width())
+      {
+        msg.debug("FAM in obj access");
+        if(is_symbol2t(value))
+          {
+          auto fam = ns.lookup(to_symbol2t(value).thename);
+           // Is FAM pointing to a static object?
+          if(!has_prefix(fam.id.as_string(), "symex_dynamic::"))
+            {
+              msg.debug("Skipping FAM check on obj access");
+              return;
+            }
+          else {
+            msg.debug("Dynamic memory for FAM");
+          }
+
+          }
+      }
+  }
 
   if(!options.get_bool_option("no-bounds-check"))
   {

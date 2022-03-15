@@ -772,7 +772,8 @@ bool clang_c_convertert::get_type(const clang::Type &the_type, typet &new_type)
     if(get_type(arr.getElementType(), sub_type))
       return true;
 
-    new_type = array_typet(sub_type, gen_one(index_type()));
+    new_type = array_typet(sub_type, gen_zero(index_type()));
+    new_type.set("incomplete", "true");
     break;
   }
 
@@ -1616,7 +1617,9 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
         else
           elem_type = to_array_type(t).subtype();
 
+        //if(elem_type.get("incomplete") != "true")
         gen_typecast(ns, init, elem_type);
+
         inits.operands().at(i) = init;
       }
 
