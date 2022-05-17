@@ -14,6 +14,7 @@ solver_creator create_new_cvc_solver;
 solver_creator create_new_mathsat_solver;
 solver_creator create_new_yices_solver;
 solver_creator create_new_bitwuzla_solver;
+solver_creator create_new_sibyl_solver;
 
 const struct esbmc_solver_config esbmc_solvers[] = {
   {"smtlib", create_new_smtlib_solver},
@@ -36,8 +37,9 @@ const struct esbmc_solver_config esbmc_solvers[] = {
   {"yices", create_new_yices_solver},
 #endif
 #ifdef BITWUZLA
-  {"bitwuzla", create_new_bitwuzla_solver}
+  {"bitwuzla", create_new_bitwuzla_solver},
 #endif
+  {"sibyl", create_new_sibyl_solver}
 };
 
 const std::string list_of_all_solvers[] = {
@@ -48,7 +50,8 @@ const std::string list_of_all_solvers[] = {
   "mathsat",
   "cvc",
   "yices",
-  "bitwuzla"};
+  "bitwuzla",
+  "sibyl"};
 
 const unsigned int total_num_of_solvers =
   sizeof(list_of_all_solvers) / sizeof(std::string);

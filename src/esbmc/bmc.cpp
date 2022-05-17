@@ -22,6 +22,7 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <fmt/format.h>
 #include <ac_config.h>
 #include <esbmc/bmc.h>
+#include <torch/script.h>
 #include <esbmc/document_subgoals.h>
 #include <fstream>
 #include <goto-programs/goto_loops.h>
@@ -170,7 +171,7 @@ smt_convt::resultt bmct::run_decision_procedure(
   {
     smt_conv->dump_smt();
     if(options.get_bool_option("smt-formula-only"))
-      return smt_convt::P_SMTLIB;
+      return smt_convt::P_UNSATISFIABLE;
   }
 
   std::stringstream ss;
@@ -663,6 +664,17 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 
       return smt_convt::P_UNSATISFIABLE;
     }
+
+    prediction_solver = std::shared_ptr<smt_convt>(create_solver_factory("sibyl", ns, options, msg));
+    run_decision_procedure(prediction_solver, eq);
+
+    sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
+
+    assert(sibyl_solver->edges.size() == sibyl_solver->edge_attr.size());
+
+    // torch::jit::script::Module module;
+
+    exit(0);
 
     if(!options.get_bool_option("smt-during-symex"))
     {

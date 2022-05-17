@@ -29,6 +29,7 @@ add_subdirectory(cvc4)
 add_subdirectory(mathsat)
 add_subdirectory(yices)
 add_subdirectory(bitwuzla)
+add_subdirectory(sibyl)
 
 set(ESBMC_AVAILABLE_SOLVERS "${ESBMC_AVAILABLE_SOLVERS}" PARENT_SCOPE)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/solver_config.h.in"

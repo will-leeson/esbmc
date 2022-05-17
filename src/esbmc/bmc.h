@@ -16,6 +16,8 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <map>
 #include <solvers/smt/smt_conv.h>
 #include <solvers/smtlib/smtlib_conv.h>
+#include <solvers/sibyl/sibyl_conv.h>
+// #include <solvers/sibyl/sibyl_pred.h>
 #include <solvers/solve.h>
 #include <util/options.h>
 
@@ -41,6 +43,7 @@ protected:
   const contextt &context;
   namespacet ns;
   const messaget &msg;
+  std::shared_ptr<smt_convt> prediction_solver;
   std::shared_ptr<smt_convt> runtime_solver;
   std::shared_ptr<reachability_treet> symex;
   virtual smt_convt::resultt run_decision_procedure(
