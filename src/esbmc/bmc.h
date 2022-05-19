@@ -17,7 +17,6 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <solvers/smt/smt_conv.h>
 #include <solvers/smtlib/smtlib_conv.h>
 #include <solvers/sibyl/sibyl_conv.h>
-// #include <solvers/sibyl/sibyl_pred.h>
 #include <solvers/solve.h>
 #include <util/options.h>
 

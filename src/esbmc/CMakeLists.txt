@@ -32,10 +32,8 @@ target_include_directories(esbmc
     PRIVATE ${Boost_INCLUDE_DIRS}
 )
 
-find_package(Torch REQUIRED)
-
 target_link_libraries(esbmc ${OLD_FRONTEND_TARGETS} ${SOLIDITY_FRONTEND_TARGETS} ${GOTO_CONTRACTOR_TARGETS} clangcfrontend
   clangcppfrontend symex pointeranalysis langapi util_esbmc bigint
-  solvers clibs default_message gotoalgorithms ${Boost_LIBRARIES} ${Torch_LIBRARIES})
+  solvers clibs default_message gotoalgorithms ${Boost_LIBRARIES})
 
 install(TARGETS esbmc DESTINATION bin)

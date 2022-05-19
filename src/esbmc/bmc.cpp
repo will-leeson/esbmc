@@ -22,7 +22,6 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <fmt/format.h>
 #include <ac_config.h>
 #include <esbmc/bmc.h>
-#include <torch/script.h>
 #include <esbmc/document_subgoals.h>
 #include <fstream>
 #include <goto-programs/goto_loops.h>
@@ -671,8 +670,6 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
     sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
     assert(sibyl_solver->edges.size() == sibyl_solver->edge_attr.size());
-
-    // torch::jit::script::Module module;
 
     exit(0);
 
