@@ -5,8 +5,8 @@
 #include <string>
 
 #include <torch/script.h> // One-stop header.
-#include <torchsparse/sparse.h>
-#include <torchscatter/scatter.h>
+// #include <torchsparse/sparse.h>
+// #include <torchscatter/scatter.h>
 
 class gat
 {

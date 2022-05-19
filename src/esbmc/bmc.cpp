@@ -42,6 +42,9 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <util/migrate.h>
 #include <util/show_symbol_table.h>
 #include <util/time_stopping.h>
+#include <torch/script.h> // One-stop header.
+
+#include <memory>
 
 bmct::bmct(
   goto_functionst &funcs,
@@ -669,7 +672,11 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 
     sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
-    assert(sibyl_solver->edges.size() == sibyl_solver->edge_attr.size());
+    msg.status("The nodes "+sibyl_solver->nodes.str());
+    msg.status("The edges "+sibyl_solver->edges.str());
+    msg.status("The edge attrs "+sibyl_solver->edge_attr.str());
+
+    torch::jit::script::Module module;
 
     exit(0);
 

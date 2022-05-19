@@ -166,9 +166,9 @@ public:
   void add_node(AST_TYPE a);
   void add_edge(int a, int b, int edge_attr);
 
-  std::vector<AST_TYPE> nodes;
-  std::vector<std::pair <int,int>> edges;
-  std::vector<int> edge_attr;
+  std::ostringstream nodes;
+  std::ostringstream edges;
+  std::ostringstream edge_attr;
   int numNodes = 0;
 
   // Flag to workaround the fact that MathSAT does not support fma. It's

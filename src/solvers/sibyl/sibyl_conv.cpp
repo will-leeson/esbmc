@@ -19,12 +19,11 @@
 // }
 
 void sibyl_convt::add_node(AST_TYPE a){
-    this->nodes.push_back(a);
+    this->nodes<<int(a)<<",";
 }
 void sibyl_convt::add_edge(int a, int b, int edge_attr){
-    std::pair<int,int> edge (a,b);
-    this->edges.push_back(edge);
-    this->edge_attr.push_back(edge_attr);
+    this->edges<<"("<<a<<","<<b<<"),";
+    this->edge_attr<<edge_attr<<",";
 }
 
 smt_convt *create_new_sibyl_solver(
@@ -130,7 +129,6 @@ const std::string sibyl_convt::solver_text()
 smt_astt sibyl_convt::mk_add(smt_astt a, smt_astt b)
 {
     this->add_node(AST_TYPE::PLUS);
-    msg.status("MK_ADD");
     int nodeVal = this->numNodes++;
     
     auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
@@ -146,7 +144,6 @@ smt_astt sibyl_convt::mk_add(smt_astt a, smt_astt b)
 
 smt_astt sibyl_convt::mk_bvadd(smt_astt a, smt_astt b) {
     this->add_node(AST_TYPE::BV_ADD);
-    msg.status("MK_BVADD");
     int nodeVal = this->numNodes++;
     
     auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
@@ -162,7 +159,6 @@ smt_astt sibyl_convt::mk_bvadd(smt_astt a, smt_astt b) {
 
 smt_astt sibyl_convt::mk_sub(smt_astt a, smt_astt b) {
     this->add_node(AST_TYPE::MINUS);
-    msg.status("MK_MINUS");
     int nodeVal = this->numNodes++;
     
     auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
@@ -178,7 +174,6 @@ smt_astt sibyl_convt::mk_sub(smt_astt a, smt_astt b) {
 
 smt_astt sibyl_convt::mk_bvsub(smt_astt a, smt_astt b) {
     this->add_node(AST_TYPE::BV_SUB);
-    msg.status("MK_BVSUB");
     int nodeVal = this->numNodes++;
     
     auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
@@ -194,7 +189,6 @@ smt_astt sibyl_convt::mk_bvsub(smt_astt a, smt_astt b) {
 
 smt_astt sibyl_convt::mk_mul(smt_astt a, smt_astt b) {
     this->add_node(AST_TYPE::TIMES);
-    msg.status("MK_TIMES");
     int nodeVal = this->numNodes++;
     
     auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
@@ -210,7 +204,6 @@ smt_astt sibyl_convt::mk_mul(smt_astt a, smt_astt b) {
 
 smt_astt sibyl_convt::mk_bvmul(smt_astt a, smt_astt b) {
     this->add_node(AST_TYPE::BV_MUL);
-    msg.status("MK_BVMUL");
     int nodeVal = this->numNodes++;
     
     auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
