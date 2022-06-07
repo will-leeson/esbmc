@@ -50,19 +50,17 @@ class CPythonEnv
 private:
   /* data */
 public:
-  CPythonEnv(/* args */);
-  ~CPythonEnv();
-};
-
-CPythonEnv::CPythonEnv(/* args */)
+  
+CPythonEnv(/* args */)
 {
   Py_Initialize();
 }
 
-CPythonEnv::~CPythonEnv()
+~CPythonEnv()
 {
   Py_Finalize();
 }
+};
 
 
 
@@ -404,7 +402,6 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
   //   PyErr_Print();
   // }
   PyRun_SimpleString("print('This is stuff2')");
-
 
   if(options.get_bool_option("schedule"))
     return run_thread(eq);

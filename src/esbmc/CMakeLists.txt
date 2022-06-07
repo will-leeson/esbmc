@@ -29,15 +29,15 @@ add_executable (esbmc main.cpp esbmc_parseoptions.cpp bmc.cpp globals.cpp docume
 target_include_directories(esbmc
     PRIVATE ${CMAKE_BINARY_DIR}/src
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-    PRIVATE ${Boost_INCLUDE_DIRS}
+    PRIVATE ${Python3_INCLUDE_DIRS}
     PRIVATE ${PYTHON_INCLUDE_DIRS}
 )
 
-message(STATUS ${PYTHON_INCLUDE_DIRS})
+message(STATUS ${Python3_INCLUDE_DIRS})
 
 target_link_libraries(esbmc ${OLD_FRONTEND_TARGETS} ${SOLIDITY_FRONTEND_TARGETS} ${GOTO_CONTRACTOR_TARGETS} clangcfrontend
   clangcppfrontend symex pointeranalysis langapi util_esbmc bigint 
-  solvers clibs default_message gotoalgorithms curses ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} util)
+  solvers clibs default_message gotoalgorithms curses ${Boost_LIBRARIES} ${Python3_LIBRARIES} util)
 
 install(TARGETS esbmc DESTINATION bin)
 set_property(TARGET esbmc PROPERTY CXX_STANDARD 14)

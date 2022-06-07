@@ -1,7 +1,7 @@
 #################################
 # Project Information           #
 #################################
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.12)
 project (ESBMC)
 
 set (ESBMC_VERSION_MAJOR 6)
@@ -82,10 +82,17 @@ endif()
 
 find_package(BISON 2.6.1 REQUIRED)
 find_package(FLEX 2.6.1 REQUIRED)
-find_package(PythonLibs REQUIRED)
-find_package(Torch REQUIRED)
-find_package(TorchSparse REQUIRED)
-find_package(TorchScatter REQUIRED)
+find_package(Python3 COMPONENTS Development REQUIRED)
+
+message(STATUS "++++++++++++++++++++++")
+if( Python3_FOUND )
+  message(STATUS "FOUND PYTHON")
+  message(STATUS ${Python3_INCLUDE_DIRS})
+  message(STATUS ${Python3_LIBRARIES})
+else()
+  message(STATUS "PYTHON NOT FOUND")
+endif()
+message(STATUS "++++++++++++++++++++++")
 
 # This MUST be executed after BuildStatic since it sets Boost Static flags
 find_package(Boost REQUIRED COMPONENTS filesystem system date_time program_options iostreams)
