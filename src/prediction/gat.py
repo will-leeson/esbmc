@@ -3,7 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as f
 from torch_geometric.nn import GATv2Conv, JumpingKnowledge, GlobalAttention
 
-from sys import argv
+# from torch_geometric.data import Data, Batch
+# from sys import argv
 
 class GAT(torch.nn.Module):
     def __init__(self, passes, inputLayerSize, outputLayerSize, numAttentionLayers):
@@ -41,8 +42,35 @@ class GAT(torch.nn.Module):
 
         return x
 
-def main(argv):
-    for item in argv:
-        print(item)
 
-main(argv)
+# def main(argv):
+#     nodes = argv[1].split(",")[:-1]
+#     edges = argv[2].split(",")[:-1]
+#     edge_attrs = argv[3].split(",")[:-1]
+
+#     assert len(edges) == 2*len(edge_attrs)
+
+#     nodes = torch.tensor([[0]*int(x) + [1] + [0]*(66-int(x)) for x in nodes])
+#     edges = torch.tensor([[int(edges[x]) for x in range(0,len(edges),2)],[int(edges[x]) for x in range(1,len(edges),2)]])
+#     edge_attrs = torch.tensor([int(x) for x in edge_attrs])
+
+#     graph = Data(x=nodes.float(), edge_index=edges, edge_attr=edge_attrs.float(), problemType=torch.FloatTensor([0]))
+#     graph = Batch.from_data_list([graph])
+
+#     model = GAT(2, 67, 6, 5).eval()
+
+#     model.load_state_dict(torch.load("/home/wel2vw/Research/esbmc_project/esbmc/src/prediction/gnn.pt", map_location='cpu'))
+
+#     with torch.no_grad():
+#         scores = model(graph.x, graph.edge_index, graph.edge_attr, graph.problemType, graph.batch)
+
+#     solvers = ["Bitwuzla", 'mathsat-5.6.6', 'Yices 2.6.2 for SMTCOMP 2021', 'z3-4.8.11', 'cvc5', 'STP 2021.0']
+#     solvers.sort()
+
+#     solverToSolvers = {"z3-4.8.11":"z3", "STP 2021.0":"boolector",  'mathsat-5.6.6':"mathsat", 'cvc5':"cvc", 'Yices 2.6.2 for SMTCOMP 2021' : "yices", "Bitwuzla": "bitwuzla"}
+
+#     choice = solvers[scores[0].argmin()]
+
+#     print(solverToSolvers[choice],end="")
+
+# main(argv)

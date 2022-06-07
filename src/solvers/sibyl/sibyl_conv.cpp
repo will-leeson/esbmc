@@ -22,7 +22,7 @@ void sibyl_convt::add_node(AST_TYPE a){
     this->nodes<<int(a)<<",";
 }
 void sibyl_convt::add_edge(int a, int b, int edge_attr){
-    this->edges<<"("<<a<<","<<b<<"),";
+    this->edges<<a<<","<<b<<",";
     this->edge_attr<<edge_attr<<",";
 }
 

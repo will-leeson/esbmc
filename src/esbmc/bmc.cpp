@@ -42,9 +42,29 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <util/migrate.h>
 #include <util/show_symbol_table.h>
 #include <util/time_stopping.h>
-#include <torch/script.h> // One-stop header.
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
 
-#include <memory>
+class CPythonEnv
+{
+private:
+  /* data */
+public:
+  CPythonEnv(/* args */);
+  ~CPythonEnv();
+};
+
+CPythonEnv::CPythonEnv(/* args */)
+{
+  Py_Initialize();
+}
+
+CPythonEnv::~CPythonEnv()
+{
+  Py_Finalize();
+}
+
+
 
 bmct::bmct(
   goto_functionst &funcs,
@@ -259,7 +279,6 @@ void bmct::show_program(std::shared_ptr<symex_target_equationt> &eq)
     }
 
     oss << '\n';
-    count++;
   }
   msg.status(oss.str());
 }
@@ -376,6 +395,16 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
 {
   symex->options.set_option("unwind", options.get_option("unwind"));
   symex->setup_for_new_explore();
+
+  CPythonEnv pythonEnv = CPythonEnv();
+  PyRun_SimpleString("import torch\nprint(torch.__version__)");
+
+  // if(pythonFile == NULL){
+  //   msg.error("Import not working right");
+  //   PyErr_Print();
+  // }
+  PyRun_SimpleString("print('This is stuff2')");
+
 
   if(options.get_bool_option("schedule"))
     return run_thread(eq);
@@ -672,20 +701,33 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 
     sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
-    msg.status("The nodes "+sibyl_solver->nodes.str());
-    msg.status("The edges "+sibyl_solver->edges.str());
-    msg.status("The edge attrs "+sibyl_solver->edge_attr.str());
+    // msg.status("The nodes "+sibyl_solver->nodes.str());
+    // msg.status("The edges "+sibyl_solver->edges.str());
+    // msg.status("The edge attrs "+sibyl_solver->edge_attr.str());
 
-    torch::jit::script::Module module;
+    fine_timet prediction_start = current_time();
+    std::string choice = "";
 
-    exit(0);
+    PyRun_SimpleString("print('=================')");
+    fine_timet prediction_stop = current_time();
+
+
+    {
+      std::ostringstream str;
+      str << "Prediction time: ";
+      output_time(prediction_stop - prediction_start, str);
+      str << "s\n";
+      str << "Choice ";
+      str << choice;
+      msg.status(str.str());
+    }
 
     if(!options.get_bool_option("smt-during-symex"))
     {
       runtime_solver =
-        std::shared_ptr<smt_convt>(create_solver_factory("", ns, options, msg));
+        std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
     }
-
+    
     return run_decision_procedure(runtime_solver, eq);
   }
 
