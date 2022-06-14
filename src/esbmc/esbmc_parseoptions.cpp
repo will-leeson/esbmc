@@ -1735,7 +1735,6 @@ int esbmc_parseoptionst::do_bmc(bmct &bmc)
     close(fd);
   }
 #endif
-
   return res;
 }
 

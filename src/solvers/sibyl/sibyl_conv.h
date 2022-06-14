@@ -52,24 +52,35 @@ typedef enum AST_TYPE {
     DIV,                                        // Arithmetic Division (62)
     POW,                                        // Arithmetic Power (63)
     ALGEBRAIC_CONSTANT,                         // Algebraic Number (64)
-    BV_TONATURAL,  
+    BV_TONATURAL,
+    CONTEXT,
 
 } AST_TYPE;
 
 #include <solvers/smt/smt_conv.h>
 #include <solvers/smt/fp/fp_conv.h>
 
-class sibyl_smt_ast : public solver_smt_ast<int>
+class sibyl_smt_ast : public smt_ast
 {
 public:
   sibyl_smt_ast(
     smt_convt *ctx,
-    int _t,
+    AST_TYPE k,
     const smt_sort *_s,
-    const messaget &msg);
+    const messaget &msg)
+    : smt_ast(ctx, _s, msg), ast_type(k) {}
   ~sibyl_smt_ast() override = default;
 
   void dump() const override;
+
+  AST_TYPE ast_type;
+  std::string symname;
+  BigInt intval;
+  std::string realval;
+  bool boolval;
+  int extract_high;
+  int extract_low;
+  std::vector<smt_astt> args;
 };
 
 class sibyl_convt : public smt_convt, public array_iface, public fp_convt
@@ -165,11 +176,32 @@ public:
   void print_model() override;
   void add_node(AST_TYPE a);
   void add_edge(int a, int b, int edge_attr);
+  unsigned int emit_ast(const sibyl_smt_ast *ast);
 
-  std::ostringstream nodes;
-  std::ostringstream edges;
-  std::ostringstream edge_attr;
-  int numNodes = 0;
+  struct symbol_table_rec
+  {
+    std::string ident;
+    unsigned int num;
+    smt_sortt sort;
+  };
+
+  typedef boost::multi_index_container<
+    symbol_table_rec,
+    boost::multi_index::indexed_by<
+      boost::multi_index::hashed_unique<
+        BOOST_MULTI_INDEX_MEMBER(symbol_table_rec, std::string, ident)>,
+      boost::multi_index::ordered_unique<
+        BOOST_MULTI_INDEX_MEMBER(symbol_table_rec, unsigned int, num),
+        std::greater<unsigned int>>>>
+    symbol_tablet;
+
+  symbol_tablet symbol_table;
+
+  std::vector<unsigned int> nodes;
+  std::vector<unsigned int> outEdges;
+  std::vector<unsigned int> inEdges;
+  std::vector<unsigned int> edge_attr;
+  unsigned int numNodes = 0;
 
   // Flag to workaround the fact that MathSAT does not support fma. It's
   // set to true so every operation is converted using the fpapi

@@ -82,7 +82,7 @@ endif()
 
 find_package(BISON 2.6.1 REQUIRED)
 find_package(FLEX 2.6.1 REQUIRED)
-find_package(Python3 COMPONENTS Development REQUIRED)
+find_package(Python3 3.9.12 COMPONENTS Development REQUIRED)
 
 message(STATUS "++++++++++++++++++++++")
 if( Python3_FOUND )

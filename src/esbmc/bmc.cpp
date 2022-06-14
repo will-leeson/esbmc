@@ -42,27 +42,6 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <util/migrate.h>
 #include <util/show_symbol_table.h>
 #include <util/time_stopping.h>
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-
-class CPythonEnv
-{
-private:
-  /* data */
-public:
-  
-CPythonEnv(/* args */)
-{
-  Py_Initialize();
-}
-
-~CPythonEnv()
-{
-  Py_Finalize();
-}
-};
-
-
 
 bmct::bmct(
   goto_functionst &funcs,
@@ -73,6 +52,7 @@ bmct::bmct(
 {
   interleaving_number = 0;
   interleaving_failed = 0;
+  use_sibyl = opts.get_bool_option("sibyl");
 
   if(options.get_bool_option("smt-during-symex"))
   {
@@ -394,17 +374,15 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
   symex->options.set_option("unwind", options.get_option("unwind"));
   symex->setup_for_new_explore();
 
-  CPythonEnv pythonEnv = CPythonEnv();
-  PyRun_SimpleString("import torch\nprint(torch.__version__)");
-
-  // if(pythonFile == NULL){
-  //   msg.error("Import not working right");
-  //   PyErr_Print();
-  // }
-  PyRun_SimpleString("print('This is stuff2')");
+  CPythonEnv *env = NULL;
+  if(use_sibyl){
+    msg.status("A man of culture");
+    env = new CPythonEnv;
+    env->loadModel("/home/will/Research/esbmc-project/esbmc/src/prediction/gat_0.pt");
+  }
 
   if(options.get_bool_option("schedule"))
-    return run_thread(eq);
+    return run_thread(eq, env);
 
   smt_convt::resultt res;
   do
@@ -414,7 +392,8 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
         fmt::format("*** Thread interleavings {} ***", interleaving_number));
 
     fine_timet bmc_start = current_time();
-    res = run_thread(eq);
+    
+    res = run_thread(eq, env);
 
     if(res == smt_convt::P_SATISFIABLE)
     {
@@ -446,6 +425,8 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
       return res;
 
   } while(symex->setup_next_formula());
+
+  delete env;
 
   return interleaving_failed > 0 ? smt_convt::P_SATISFIABLE : res;
 }
@@ -580,7 +561,7 @@ void bmct::bidirectional_search(
   }
 }
 
-smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
+smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq, CPythonEnv *env)
 {
   std::shared_ptr<goto_symext::symex_resultt> result;
 
@@ -693,30 +674,28 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
       return smt_convt::P_UNSATISFIABLE;
     }
 
-    prediction_solver = std::shared_ptr<smt_convt>(create_solver_factory("sibyl", ns, options, msg));
-    run_decision_procedure(prediction_solver, eq);
-
-    sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
-
-    // msg.status("The nodes "+sibyl_solver->nodes.str());
-    // msg.status("The edges "+sibyl_solver->edges.str());
-    // msg.status("The edge attrs "+sibyl_solver->edge_attr.str());
-
-    fine_timet prediction_start = current_time();
     std::string choice = "";
+    if(use_sibyl){
+      prediction_solver = std::shared_ptr<smt_convt>(create_solver_factory("sibyl", ns, options, msg));
+      run_decision_procedure(prediction_solver, eq);
 
-    PyRun_SimpleString("print('=================')");
-    fine_timet prediction_stop = current_time();
+      sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
+      fine_timet prediction_start = current_time();
+      choice = env->predict(sibyl_solver->nodes, sibyl_solver->outEdges, sibyl_solver->inEdges, sibyl_solver->edge_attr);
+      msg.error("YOU NEED TO HANDLE CONTEXT NODES IN THE GRAPH");
+      msg.status("++++++++++++++++++++++++++++");
+      fine_timet prediction_stop = current_time();
 
-    {
-      std::ostringstream str;
-      str << "Prediction time: ";
-      output_time(prediction_stop - prediction_start, str);
-      str << "s\n";
-      str << "Choice ";
-      str << choice;
-      msg.status(str.str());
+      {
+        std::ostringstream str;
+        str << "Prediction time: ";
+        output_time(prediction_stop - prediction_start, str);
+        str << "s\n";
+        str << "Choice ";
+        str << choice;
+        msg.status(str.str());
+      }
     }
 
     if(!options.get_bool_option("smt-during-symex"))

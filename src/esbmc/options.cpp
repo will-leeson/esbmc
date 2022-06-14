@@ -163,6 +163,7 @@ const struct group_opt_templ all_cmd_options[] = {
      "incremental loop unwinding assertion verification"}}},
   {"Solver",
    {{"list-solvers", NULL, "list available solvers and exit"},
+    {"sibyl", NULL, "use Sibyl Algorithm Selector"},
     {"boolector", NULL, "use Boolector (default),"},
     {"z3", NULL, "use Z3"},
     {"mathsat", NULL, "use MathSAT"},

@@ -18,12 +18,29 @@
 //   }
 // }
 
-void sibyl_convt::add_node(AST_TYPE a){
-    this->nodes<<int(a)<<",";
-}
-void sibyl_convt::add_edge(int a, int b, int edge_attr){
-    this->edges<<a<<","<<b<<",";
-    this->edge_attr<<edge_attr<<",";
+unsigned int sibyl_convt::emit_ast(const sibyl_smt_ast* ast){
+    nodes.push_back(ast->ast_type);
+    unsigned int nodeNum = numNodes++;
+    for(auto arg : ast->args){
+        const sibyl_smt_ast *sa = static_cast<const sibyl_smt_ast *>(arg);
+        unsigned int argNodeNum = emit_ast(sa);
+        outEdges.push_back(nodeNum);
+        inEdges.push_back(argNodeNum);
+        edge_attr.push_back(0);
+
+        outEdges.push_back(argNodeNum);
+        inEdges.push_back(nodeNum);
+        edge_attr.push_back(1);
+    }
+
+    if(ast->ast_type == AST_TYPE::SYMBOL){
+        symbol_tablet::iterator it = symbol_table.find(ast->symname);
+        outEdges.push_back(nodeNum);
+        inEdges.push_back(it->num);
+        edge_attr.push_back(2);
+    }
+
+    return nodeNum;
 }
 
 smt_convt *create_new_sibyl_solver(
@@ -48,7 +65,10 @@ sibyl_convt::sibyl_convt(
     array_iface(false, false),
     fp_convt(this, msg),
     use_fp_api(false)
-{}
+{
+    nodes.push_back(int(AST_TYPE::AND));
+    numNodes++;
+}
 
 sibyl_convt::~sibyl_convt()
 {
@@ -65,13 +85,22 @@ void sibyl_convt::pop_ctx()
 }
 
 void sibyl_convt::assert_ast(smt_astt a){
-    const sibyl_smt_ast *sast = to_solver_smt_ast<sibyl_smt_ast>(a);
-    // this->add_node(AST_TYPE::FORALL);
+    const sibyl_smt_ast *sa = static_cast<const sibyl_smt_ast *>(a);
+
+    int res = emit_ast(sa);
+    
+    outEdges.push_back(0);
+    inEdges.push_back(res);
+    edge_attr.push_back(0);
+    
+    inEdges.push_back(0);
+    outEdges.push_back(res);
+    edge_attr.push_back(1);
 }
 
 smt_convt::resultt sibyl_convt::dec_solve()
 {
-//   msg.debug("Sibyl should not be used to solve");
+//   msg.debug("Push Sibyl should not be used to solve");
   return smt_convt::P_ERROR;
 }
 
@@ -116,7 +145,7 @@ expr2tc sibyl_convt::get_array_elem(
   const type2tc &subtype)
 {
   msg.error("Do not use sibyl to retrieve values");
-  expr2tc result = get_by_ast(subtype, new_ast(0, convert_sort(subtype)));
+  expr2tc result;
 
   return result;
 }
@@ -128,619 +157,385 @@ const std::string sibyl_convt::solver_text()
 
 smt_astt sibyl_convt::mk_add(smt_astt a, smt_astt b)
 {
-    this->add_node(AST_TYPE::PLUS);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::PLUS, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvadd(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_ADD);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_ADD, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_sub(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::MINUS);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::MINUS, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvsub(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_SUB);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_SUB, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_mul(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::TIMES);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::TIMES, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvmul(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_MUL);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_MUL, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvsmod(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_SREM);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_SREM, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvumod(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_UREM);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_UREM, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvsdiv(smt_astt a, smt_astt b){
-    this->add_node(AST_TYPE::BV_SDIV);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_SDIV, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvudiv(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_UDIV);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_UDIV, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvshl(smt_astt a, smt_astt b){
-    this->add_node(AST_TYPE::BV_LSHL);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_LSHL, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvashr(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_ASHR);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_ASHR, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvlshr(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_LSHR);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_LSHR, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_neg(smt_astt a){
-    this->add_node(AST_TYPE::TIMES);
-    int nodeVal = this->numNodes++;
+    smt_astt b = mk_smt_int(-1);
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::TIMES, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(new_ast(this->numNodes, mk_int_sort())); 
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvneg(smt_astt a) {
-    this->add_node(AST_TYPE::BV_NEG);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_NEG, a->sort, msg);
+    ast->args.push_back(a);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvnot(smt_astt a){
-    this->add_node(AST_TYPE::BV_NOT);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_NOT, a->sort, msg);
+    ast->args.push_back(a);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvxor(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_XOR);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_XOR, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvor(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_OR);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_OR, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvand(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_AND);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_AND, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_implies(smt_astt a, smt_astt b){
-    this->add_node(AST_TYPE::IMPLIES);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::IMPLIES, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_xor(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::AND);
-    int nodeVal = this->numNodes++;
+    smt_astt NotA = mk_not(a);
+    smt_astt NotB = mk_not(a);
 
-    this->add_node(AST_TYPE::AND);
-    int andVal = this->numNodes++;
-    auto andLHS = to_solver_smt_ast<sibyl_smt_ast>(a);
-    auto andRHS = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(andVal, andLHS->a, 0);
-    this->add_edge(andLHS->a, andVal, 1);
-    this->add_edge(andVal, andRHS->a, 0);
-    this->add_edge(andRHS->a, andVal, 1);
+    smt_astt ANotB = mk_and(a, NotB);
+    smt_astt NotAB = mk_and(NotA, b);
 
-    this->add_node(AST_TYPE::NOT);
-    int notVal = this->numNodes++;
-    this->add_edge(notVal, andVal, 0);
-    this->add_edge(andVal, notVal, 1);
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::OR, a->sort, msg);
+    ast->args.push_back(ANotB);
+    ast->args.push_back(NotAB);
     
-    this->add_node(AST_TYPE::OR);
-    int orVal = this->numNodes++;
-    auto orLHS = to_solver_smt_ast<sibyl_smt_ast>(a);
-    auto orRHS = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(orVal, orLHS->a, 0);
-    this->add_edge(orLHS->a, orVal, 1);
-    this->add_edge(orVal, orRHS->a, 0);
-    this->add_edge(orRHS->a, orVal, 1);
-
-    this->add_edge(nodeVal, notVal, 0);
-    this->add_edge(notVal, nodeVal, 1);
-    this->add_edge(nodeVal, orVal, 0);
-    this->add_edge(orVal, nodeVal, 1);
-
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_or(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::OR);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::OR, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_and(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::AND);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::AND, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_not(smt_astt a) {
-    this->add_node(AST_TYPE::NOT);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::NOT, a->sort, msg);
+    ast->args.push_back(a);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_lt(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::LT);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::LT, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvult(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_ULT);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_ULT, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvslt(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_SLT);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_SLT, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_le(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::LE);
-    int nodeVal = this->numNodes++;
+   sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::LE, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvule(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_ULE);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_ULE, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_bvsle(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_SLE);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_SLE, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_eq(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::EQUALS);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::EQUALS, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_store(smt_astt a, smt_astt b, smt_astt c) {
-    this->add_node(AST_TYPE::ARRAY_STORE);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::ARRAY_STORE, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
+    ast->args.push_back(c);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    auto cPrime = to_solver_smt_ast<sibyl_smt_ast>(c);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_select(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::ARRAY_SELECT);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::ARRAY_SELECT, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_smt_int(const BigInt &theint) {
-    this->add_node(AST_TYPE::INT_CONSTANT);
-
-    return new_ast(this->numNodes++, mk_int_sort());
+    smt_sortt s = mk_int_sort();
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::INT_CONSTANT, s, msg);
+    ast->intval = theint;
+    
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_smt_real(const std::string &str) {
-    this->add_node(AST_TYPE::REAL_CONSTANT);
-
-    return new_ast(this->numNodes++, mk_real_sort());
+    smt_sortt s = mk_real_sort();
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::REAL_CONSTANT, s, msg);
+    ast->realval = str;
+    
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_smt_bv(const BigInt &theint, smt_sortt s){
-    this->add_node(AST_TYPE::BV_CONSTANT);
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_CONSTANT, s, msg);
+    ast->intval = theint;
     
-    return new_ast(this->numNodes++, s);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_smt_bool(bool val) {
-    this->add_node(AST_TYPE::BOOL_CONSTANT);
-
-    return new_ast(this->numNodes++, mk_bool_sort());
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BOOL_CONSTANT, boolean_sort, msg);
+    ast->boolval = val;
+    
+    return ast;
 }
 
 
 smt_astt sibyl_convt::mk_array_symbol(
 const std::string &name,
 const smt_sort *s,
-smt_sortt array_subtype) {
+smt_sortt array_subtype [[gnu::unused]]) {
     return mk_smt_symbol(name, s);
 }
 
 
 smt_astt sibyl_convt::mk_smt_symbol(const std::string &name, const smt_sort *s) {
-    this->add_node(AST_TYPE::SYMBOL);
+    sibyl_smt_ast *a = new sibyl_smt_ast(this, AST_TYPE::SYMBOL, s, msg);
+    a->symname = name;
 
-    return new_ast(this->numNodes++, s);
+    symbol_tablet::iterator it = symbol_table.find(name);
+
+    if(it != symbol_table.end())
+        return a;
+    
+    struct symbol_table_rec record = {name, numNodes, s};
+    symbol_table.insert(record);
+
+    numNodes++;
+    nodes.push_back(int(AST_TYPE::CONTEXT));
+
+    if(s->id == SMT_SORT_STRUCT)
+        return a;
+    
+    return a;
 }
 
 smt_astt sibyl_convt::mk_extract(smt_astt a, unsigned int high, unsigned int low) {
-    this->add_node(AST_TYPE::BV_TONATURAL);
-    int nodeVal = this->numNodes++;
+    smt_sortt s = mk_bv_sort(high - low + 1);
+    sibyl_smt_ast *n = new sibyl_smt_ast(this, AST_TYPE::BV_TONATURAL, s, msg);
 
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    n->extract_high = high;
+    n->extract_low = low;
+    n->args.push_back(a);
+    
+    return n;
 }
 
 smt_astt sibyl_convt::mk_sign_ext(smt_astt a, unsigned int topwidth){
-    this->add_node(AST_TYPE::BV_SEXT);
-    int nodeVal = this->numNodes++;
+    std::size_t topbit = a->sort->get_data_width();
+    smt_astt the_top_bit = mk_extract(a, topbit - 1, topbit - 1);
+    smt_astt zero_bit = mk_smt_bv(0, mk_bv_sort(1));
+    smt_astt t = mk_eq(the_top_bit, zero_bit);
 
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
+    smt_astt z = mk_smt_bv(0, mk_bv_sort(topwidth));
 
-    return new_ast(nodeVal, a->sort);
+    // Calculate the exact value; SMTLIB text parsers don't like taking an
+    // over-full integer literal.
+    uint64_t big = 0xFFFFFFFFFFFFFFFFULL;
+    unsigned int num_topbits = 64 - topwidth;
+    big >>= num_topbits;
+    smt_astt f = mk_smt_bv(big, mk_bv_sort(topwidth));
+
+    smt_astt topbits = mk_ite(t, z, f);
+
+    return mk_concat(topbits, a);
 }
 
 smt_astt sibyl_convt::mk_zero_ext(smt_astt a, unsigned int topwidth){
-    this->add_node(AST_TYPE::BV_ZEXT);
-
-    int nodeVal = this->numNodes++;
-
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    smt_astt z = mk_smt_bv(0, mk_bv_sort(topwidth));
+    return mk_concat(z, a);
 }
 
 smt_astt sibyl_convt::mk_concat(smt_astt a, smt_astt b) {
-    this->add_node(AST_TYPE::BV_CONCAT);
-    int nodeVal = this->numNodes++;
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::BV_CONCAT, a->sort, msg);
+    ast->args.push_back(a);
+    ast->args.push_back(b);
     
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(a);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
-
-    auto bPrime = to_solver_smt_ast<sibyl_smt_ast>(b);
-    this->add_edge(nodeVal, bPrime->a, 0);
-    this->add_edge(bPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, a->sort);
+    return ast;
 }
 
 smt_astt sibyl_convt::mk_ite(smt_astt cond, smt_astt t, smt_astt f) {
-    this->add_node(AST_TYPE::ITE);
-    int nodeVal = this->numNodes++;
-
-    auto condPrime = to_solver_smt_ast<sibyl_smt_ast>(cond);    
-    this->add_edge(nodeVal, condPrime->a, 0);
-    this->add_edge(condPrime->a, nodeVal, 1);
-
-    auto tPrime = to_solver_smt_ast<sibyl_smt_ast>(t);
-    this->add_edge(nodeVal, tPrime->a, 0);
-    this->add_edge(tPrime->a, nodeVal, 1);
-
-    auto fPrime = to_solver_smt_ast<sibyl_smt_ast>(f);
-    this->add_edge(nodeVal, fPrime->a, 0);
-    this->add_edge(fPrime->a, nodeVal, 1);
-
-    return new_ast(nodeVal, t->sort);
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::ITE, t->sort, msg);
+    ast->args.push_back(cond);
+    ast->args.push_back(t);
+    ast->args.push_back(f);
+    
+    return ast;
 }
 
 smt_astt
@@ -748,25 +543,10 @@ sibyl_convt::convert_array_of(smt_astt init_val, unsigned long domain_width){
     smt_sortt dom_sort = mk_int_bv_sort(domain_width);
     smt_sortt arrsort = mk_array_sort(dom_sort, init_val->sort);
 
-    this->add_node(AST_TYPE::ARRAY_VALUE);
-    int nodeVal = this->numNodes++;
-    auto aPrime = to_solver_smt_ast<sibyl_smt_ast>(init_val);    
-    this->add_edge(nodeVal, aPrime->a, 0);
-    this->add_edge(aPrime->a, nodeVal, 1);
+    sibyl_smt_ast *ast = new sibyl_smt_ast(this, AST_TYPE::ARRAY_VALUE, arrsort, msg);
+    ast->args.push_back(init_val);
 
-    return new_ast(nodeVal, arrsort);
-}
-
-sibyl_smt_ast::sibyl_smt_ast(
-  smt_convt *ctx,
-  int _t,
-  const smt_sort *_s,
-  const messaget &msg)
-  : solver_smt_ast<int>(ctx, _t, _s, msg)
-{
-  auto convt = dynamic_cast<const sibyl_convt *>(context);
-  assert(convt != nullptr);
-  // convt->check_msat_error(_t);
+    return ast;
 }
 
 void sibyl_smt_ast::dump() const

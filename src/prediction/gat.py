@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as f
-from torch_geometric.nn import GATv2Conv, JumpingKnowledge, GlobalAttention
-
-# from torch_geometric.data import Data, Batch
-# from sys import argv
+from torch_geometric.nn import GATv2Conv, JumpingKnowledge, GlobalAttention, global_add_pool
+from torch_geometric.data import Data, Batch
+import numpy as np
 
 class GAT(torch.nn.Module):
     def __init__(self, passes, inputLayerSize, outputLayerSize, numAttentionLayers):
@@ -23,17 +22,15 @@ class GAT(torch.nn.Module):
     
     def forward(self, x, edge_index, edge_attr, problemType, batch):
         xs = [x]
-
-        for gat in self.gats: 
-            out = gat(x, edge_index, edge_attr=edge_attr)
-            x = f.leaky_relu(out)
+        for gat in self.gats:
+            x = f.leaky_relu(gat(x, edge_index, edge_attr=edge_attr))
             xs += [x]
 
         x = self.jump(xs)
         x = self.pool(x, batch)
-        
+
         x = torch.cat((x.reshape(1,x.size(0)*x.size(1)), problemType.unsqueeze(1)), dim=1)
-        
+
         x = self.fc1(x)
         x = f.leaky_relu(x)
         x = self.fc2(x)
@@ -41,7 +38,31 @@ class GAT(torch.nn.Module):
         x = self.fcLast(x)
 
         return x
+    
+    def load_model(self, model_file):
+        self.load_state_dict(torch.load(model_file, map_location='cpu')) 
 
+def predict(model, nodes, outEdges, inEdges, edge_attrs):
+    nodes = torch.tensor([[0]*x + [1] + [0]*(66-x) for x in nodes])
+    edges = torch.tensor([outEdges,inEdges])
+    edge_attrs = torch.tensor(edge_attrs)
+
+    # graph = np.savez("graph.npz", nodes=nodes.numpy(), edges=edges.numpy(), edge_attrs=edge_attrs.numpy())
+
+    graph = Data(x=nodes.float(), edge_index=edges, edge_attr=edge_attrs.float(), problemType=torch.FloatTensor([0]))
+    graph = Batch.from_data_list([graph])
+    model.eval()
+
+    with torch.no_grad():
+        print("about to predict")
+        scores = model(graph.x, graph.edge_index, graph.edge_attr, graph.problemType, graph.batch)
+        print("predicted")
+
+    solvers = ["Bitwuzla", 'mathsat-5.6.6', 'Yices 2.6.2 for SMTCOMP 2021', 'z3-4.8.11', 'cvc5', 'STP 2021.0']
+    solvers.sort()
+
+    solverToSolvers = {"z3-4.8.11":"z3", "STP 2021.0":"boolector",  'mathsat-5.6.6':"mathsat", 'cvc5':"cvc", 'Yices 2.6.2 for SMTCOMP 2021' : "yices", "Bitwuzla": "bitwuzla"}
+    return solverToSolvers[solvers[scores[0].argmin()]]
 
 # def main(argv):
 #     nodes = argv[1].split(",")[:-1]
