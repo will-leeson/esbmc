@@ -285,6 +285,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     break;
   case expr2t::constant_string_id:
   {
+    msg.status("========STRING ID=====");
     const constant_string2t &str = to_constant_string2t(expr);
     expr2tc newarr = str.to_array();
     a = convert_ast(newarr);

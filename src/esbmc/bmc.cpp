@@ -378,7 +378,14 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
   if(use_sibyl){
     msg.status("A man of culture");
     env = new CPythonEnv;
-    env->loadModel("/home/will/Research/esbmc-project/esbmc/src/prediction/gat_0.pt");
+    std::string model = options.get_option("sibyl-model");
+    if (model == "")
+    {
+      msg.error("When using Sibyl, you must provide a pretrained model location with sibyl-model flag");
+      abort();
+    } 
+    env->loadModel(model);
+    assert(env->isLoaded());
   }
 
   if(options.get_bool_option("schedule"))
@@ -683,8 +690,6 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
 
       fine_timet prediction_start = current_time();
       choice = env->predict(sibyl_solver->nodes, sibyl_solver->outEdges, sibyl_solver->inEdges, sibyl_solver->edge_attr);
-      msg.error("YOU NEED TO HANDLE CONTEXT NODES IN THE GRAPH");
-      msg.status("++++++++++++++++++++++++++++");
       fine_timet prediction_stop = current_time();
 
       {

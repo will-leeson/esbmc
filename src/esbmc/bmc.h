@@ -28,7 +28,7 @@ class CPythonEnv
 {
 private:
   PyObject *gat, *pModule;
-  bool loadingError = false;
+  bool loaded = false;
 public:
   CPythonEnv()
   {
@@ -45,7 +45,6 @@ public:
     PyObject *dict = PyModule_GetDict(pModule);
     if (dict == nullptr) {
       PyErr_Print();
-      loadingError = true;
     }
 
     PyObject *gatClass = PyDict_GetItemString(dict, "GAT");
@@ -66,8 +65,8 @@ public:
       Py_DECREF(gatClass);
       Py_DECREF(gatArgs);
       Py_DECREF(dict);
+      loaded=true;
     } else {
-      loadingError=true;
       Py_DECREF(gatClass);
     }
   }
@@ -77,6 +76,10 @@ public:
     Py_DECREF(pModule);
     Py_DECREF(gat);
     Py_Finalize();
+  }
+
+  bool isLoaded(){
+    return loaded;
   }
 
   void loadModel(std::string file){
