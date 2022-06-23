@@ -99,9 +99,16 @@ static const std::string pick_default_solver(const messaget &msg)
   }
   else
   {
-    msg.status(fmt::format(
-      "No solver specified; defaulting to {}", esbmc_solvers[1].name));
-    return esbmc_solvers[1].name;
+    if(esbmc_solvers[1].name == "sibyl"){
+      msg.status(fmt::format(
+        "No solver specified; defaulting to {}", esbmc_solvers[2].name));
+      return esbmc_solvers[2].name;
+    }
+    else{
+      msg.status(fmt::format(
+        "No solver specified; defaulting to {}", esbmc_solvers[1].name));
+      return esbmc_solvers[1].name;
+    }
   }
 #endif
 }
@@ -119,7 +126,7 @@ static smt_convt *pick_solver(
 
   for(i = 0; i < total_num_of_solvers; i++)
   {
-    if(options.get_bool_option(list_of_all_solvers[i]))
+    if(list_of_all_solvers[i] != "sibyl" && options.get_bool_option(list_of_all_solvers[i]))
     {
       if(the_solver != "")
       {

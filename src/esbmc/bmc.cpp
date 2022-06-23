@@ -42,6 +42,11 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <util/migrate.h>
 #include <util/show_symbol_table.h>
 #include <util/time_stopping.h>
+#include <torch/script.h>
+#include <torchscatter/scatter.h>
+#include <torchsparse/sparse.h>
+
+#include <iostream>
 
 bmct::bmct(
   goto_functionst &funcs,
@@ -374,22 +379,18 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
   symex->options.set_option("unwind", options.get_option("unwind"));
   symex->setup_for_new_explore();
 
-  CPythonEnv *env = NULL;
   if(use_sibyl){
     msg.status("A man of culture");
-    env = new CPythonEnv;
     std::string model = options.get_option("sibyl-model");
     if (model == "")
     {
       msg.error("When using Sibyl, you must provide a pretrained model location with sibyl-model flag");
       abort();
     } 
-    env->loadModel(model);
-    assert(env->isLoaded());
   }
 
   if(options.get_bool_option("schedule"))
-    return run_thread(eq, env);
+    return run_thread(eq);
 
   smt_convt::resultt res;
   do
@@ -400,7 +401,7 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
 
     fine_timet bmc_start = current_time();
     
-    res = run_thread(eq, env);
+    res = run_thread(eq);
 
     if(res == smt_convt::P_SATISFIABLE)
     {
@@ -432,8 +433,6 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
       return res;
 
   } while(symex->setup_next_formula());
-
-  delete env;
 
   return interleaving_failed > 0 ? smt_convt::P_SATISFIABLE : res;
 }
@@ -568,7 +567,7 @@ void bmct::bidirectional_search(
   }
 }
 
-smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq, CPythonEnv *env)
+smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 {
   std::shared_ptr<goto_symext::symex_resultt> result;
 
@@ -683,13 +682,33 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
 
     std::string choice = "";
     if(use_sibyl){
+      fine_timet prediction_start = current_time();
+
       prediction_solver = std::shared_ptr<smt_convt>(create_solver_factory("sibyl", ns, options, msg));
       run_decision_procedure(prediction_solver, eq);
 
       sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
-      fine_timet prediction_start = current_time();
-      choice = env->predict(sibyl_solver->nodes, sibyl_solver->outEdges, sibyl_solver->inEdges, sibyl_solver->edge_attr);
+      torch::jit::script::Module model;
+
+      try {
+        model = torch::jit::load(options.get_option("sibyl-model"));
+        auto x = torch::randn({5, 32});
+        auto edge_index = torch::tensor({
+            {0, 1, 1, 2, 2, 3, 3, 4},
+            {1, 0, 2, 1, 3, 2, 4, 3},
+        });
+
+        std::vector<torch::jit::IValue> inputs;
+        inputs.push_back(x);
+        inputs.push_back(edge_index);
+
+        auto out = model.forward(inputs).toTensor();
+        std::cout << "output tensor shape: " << out.sizes() << std::endl;
+      } catch (const c10::Error &e) {
+        msg.error("error loading the model");
+      }
+
       fine_timet prediction_stop = current_time();
 
       {
