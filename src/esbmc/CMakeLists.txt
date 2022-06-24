@@ -33,7 +33,7 @@ target_include_directories(esbmc
     PRIVATE ${Boost_INCLUDE_DIRS}
 )
 
-target_link_libraries(esbmc ${OLD_FRONTEND_TARGETS} ${SOLIDITY_FRONTEND_TARGETS} ${GOTO_CONTRACTOR_TARGETS} clangcfrontend TorchScatter::TorchScatter TorchSparse::TorchSparse
+target_link_libraries(esbmc ${OLD_FRONTEND_TARGETS} ${SOLIDITY_FRONTEND_TARGETS} ${GOTO_CONTRACTOR_TARGETS} clangcfrontend TorchScatter::TorchScatter TorchSparse::TorchSparse prediction
   clangcppfrontend symex pointeranalysis langapi util_esbmc bigint 
   solvers clibs default_message gotoalgorithms curses ${Boost_LIBRARIES} util)
 

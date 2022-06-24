@@ -8,18 +8,19 @@
 
 #define new_ast new_solver_ast<sibyl_smt_ast>
 
-// void sibyl_convt::check_msat_error(msat_term &r) const
-// {
-//   if(MSAT_ERROR_TERM(r))
-//   {
-//     msg.error("Error creating SMT ");
-//     msg.error(fmt::format("Error text: \"{}\"", msat_last_error_message(env)));
-//     abort();
-//   }
-// }
+void sibyl_convt::insert_node(unsigned int x){
+    for(int i=0; i<67; i++){
+        if(i == x){
+            nodes.push_back(1);
+        }
+        else{
+            nodes.push_back(0);
+        }
+    }
+}
 
 unsigned int sibyl_convt::emit_ast(const sibyl_smt_ast* ast){
-    nodes.push_back(ast->ast_type);
+    insert_node(ast->ast_type);
     unsigned int nodeNum = numNodes++;
     for(auto arg : ast->args){
         const sibyl_smt_ast *sa = static_cast<const sibyl_smt_ast *>(arg);
@@ -66,7 +67,7 @@ sibyl_convt::sibyl_convt(
     fp_convt(this, msg),
     use_fp_api(false)
 {
-    nodes.push_back(int(AST_TYPE::AND));
+    insert_node(int(AST_TYPE::AND));
     numNodes++;
 }
 
@@ -477,7 +478,7 @@ smt_astt sibyl_convt::mk_smt_symbol(const std::string &name, const smt_sort *s) 
     symbol_table.insert(record);
 
     numNodes++;
-    nodes.push_back(int(AST_TYPE::CONTEXT));
+    insert_node(int(AST_TYPE::CONTEXT));
 
     if(s->id == SMT_SORT_STRUCT)
         return a;

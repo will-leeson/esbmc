@@ -457,6 +457,10 @@ int esbmc_parseoptionst::doit()
     return 1;
   }
 
+  if(cmdline.isset("sibyl")){
+    msg.status(cmdline.getval("sibyl-model"));
+    model.load_model(cmdline.getval("sibyl-model"));
+  }
   //
   // command line options
   //
@@ -503,6 +507,9 @@ int esbmc_parseoptionst::doit()
 
   // do actual BMC
   bmct bmc(goto_functions, opts, context, msg);
+  if(model.is_loaded()){
+    bmc.set_model(model);
+  }
 
   return do_bmc(bmc);
 }
@@ -843,6 +850,9 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
     for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
     {
       bmct bmc(goto_functions, opts, context, msg);
+      if(model.is_loaded()){
+        bmc.set_model(model);
+      }
       bmc.options.set_option("unwind", integer2string(k_step));
 
       msg.status(fmt::format("*** Checking base case, k = {:d}\n", k_step));
@@ -948,6 +958,9 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
     for(BigInt k_step = 2; k_step <= max_k_step; k_step += k_step_inc)
     {
       bmct bmc(goto_functions, opts, context, msg);
+      if(model.is_loaded()){
+        bmc.set_model(model);
+      }
       bmc.options.set_option("unwind", integer2string(k_step));
 
       msg.status(
@@ -1016,6 +1029,9 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
     for(BigInt k_step = 2; k_step <= max_k_step; k_step += k_step_inc)
     {
       bmct bmc(goto_functions, opts, context, msg);
+      if(model.is_loaded()){
+        bmc.set_model(model);
+      }
 
       bmc.options.set_option("unwind", integer2string(k_step));
 
@@ -1250,6 +1266,9 @@ int esbmc_parseoptionst::do_base_case(
   opts.set_option("partial-loops", false);
 
   bmct bmc(goto_functions, opts, context, msg);
+  if(model.is_loaded()){
+    bmc.set_model(model);
+  }
 
   bmc.options.set_option("unwind", integer2string(k_step));
 
@@ -1296,6 +1315,10 @@ int esbmc_parseoptionst::do_forward_condition(
   opts.set_option("no-assertions", true);
 
   bmct bmc(goto_functions, opts, context, msg);
+  if(model.is_loaded()){
+    bmc.set_model(model);
+  }
+
 
   bmc.options.set_option("unwind", integer2string(k_step));
 
@@ -1352,6 +1375,9 @@ int esbmc_parseoptionst::do_inductive_step(
   opts.set_option("partial-loops", true);
 
   bmct bmc(goto_functions, opts, context, msg);
+  if(model.is_loaded()){
+    bmc.set_model(model);
+  }
   bmc.options.set_option("unwind", integer2string(k_step));
 
   msg.status(fmt::format("*** Checking inductive step, k = {:d}", k_step));

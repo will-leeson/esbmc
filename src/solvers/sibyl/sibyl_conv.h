@@ -174,8 +174,7 @@ public:
 
   void dump_smt() override;
   void print_model() override;
-  void add_node(AST_TYPE a);
-  void add_edge(int a, int b, int edge_attr);
+  void insert_node(unsigned int x);
   unsigned int emit_ast(const sibyl_smt_ast *ast);
 
   struct symbol_table_rec

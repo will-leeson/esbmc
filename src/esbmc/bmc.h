@@ -9,8 +9,6 @@ Author: Daniel Kroening, kroening@kroening.com
 #ifndef CPROVER_CBMC_BMC_H
 #define CPROVER_CBMC_BMC_H
 
-#define PY_SSIZE_T_CLEAN
-
 #include <goto-symex/reachability_tree.h>
 #include <goto-symex/symex_target_equation.h>
 #include <langapi/language_ui.h>
@@ -22,6 +20,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <solvers/solve.h>
 #include <util/options.h>
 #include <iostream>
+#include <prediction/gat.h>
 
 
 class bmct
@@ -38,6 +37,7 @@ public:
   BigInt interleaving_number;
   BigInt interleaving_failed;
   bool use_sibyl;
+  void set_model(gat _model);
 
   virtual smt_convt::resultt start_bmc();
   virtual smt_convt::resultt run(std::shared_ptr<symex_target_equationt> &eq);
@@ -84,6 +84,8 @@ protected:
     std::shared_ptr<symex_target_equationt> &eq);
 
   smt_convt::resultt run_thread(std::shared_ptr<symex_target_equationt> &eq);
+
+  gat model;
 };
 
 #endif

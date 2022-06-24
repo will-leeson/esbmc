@@ -42,9 +42,7 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <util/migrate.h>
 #include <util/show_symbol_table.h>
 #include <util/time_stopping.h>
-#include <torch/script.h>
-#include <torchscatter/scatter.h>
-#include <torchsparse/sparse.h>
+#include <prediction/gat.h>
 
 #include <iostream>
 
@@ -379,16 +377,6 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
   symex->options.set_option("unwind", options.get_option("unwind"));
   symex->setup_for_new_explore();
 
-  if(use_sibyl){
-    msg.status("A man of culture");
-    std::string model = options.get_option("sibyl-model");
-    if (model == "")
-    {
-      msg.error("When using Sibyl, you must provide a pretrained model location with sibyl-model flag");
-      abort();
-    } 
-  }
-
   if(options.get_bool_option("schedule"))
     return run_thread(eq);
 
@@ -680,7 +668,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
       return smt_convt::P_UNSATISFIABLE;
     }
 
-    std::string choice = "";
+    int choice = -1;
     if(use_sibyl){
       fine_timet prediction_start = current_time();
 
@@ -689,24 +677,14 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 
       sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
-      torch::jit::script::Module model;
+      gat theModel(options.get_option("sibyl-model"));
 
-      try {
-        model = torch::jit::load(options.get_option("sibyl-model"));
-        auto x = torch::randn({5, 32});
-        auto edge_index = torch::tensor({
-            {0, 1, 1, 2, 2, 3, 3, 4},
-            {1, 0, 2, 1, 3, 2, 4, 3},
-        });
-
-        std::vector<torch::jit::IValue> inputs;
-        inputs.push_back(x);
-        inputs.push_back(edge_index);
-
-        auto out = model.forward(inputs).toTensor();
-        std::cout << "output tensor shape: " << out.sizes() << std::endl;
-      } catch (const c10::Error &e) {
-        msg.error("error loading the model");
+      if (theModel.is_loaded()){
+        choice = theModel.predict(sibyl_solver->nodes, sibyl_solver->inEdges, sibyl_solver->outEdges, sibyl_solver->edge_attr);
+      }
+      else{
+        msg.error("Model is not loaded");
+        abort();
       }
 
       fine_timet prediction_stop = current_time();
@@ -725,7 +703,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
     if(!options.get_bool_option("smt-during-symex"))
     {
       runtime_solver =
-        std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
+        std::shared_ptr<smt_convt>(create_solver_factory(esbmc_solvers[choice].name, ns, options, msg));
     }
     
     return run_decision_procedure(runtime_solver, eq);
@@ -748,4 +726,8 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
     msg.error("Out of memory\n");
     return smt_convt::P_ERROR;
   }
+}
+
+void bmct::set_model(gat _model){
+  model = _model;
 }

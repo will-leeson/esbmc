@@ -15,6 +15,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/cmdline.h>
 #include <util/options.h>
 #include <util/parseoptions.h>
+#include <prediction/gat.h>
 
 extern const struct group_opt_templ all_cmd_options[];
 
@@ -96,6 +97,7 @@ private:
 
 public:
   goto_functionst goto_functions;
+  gat model;
 };
 
 #endif
