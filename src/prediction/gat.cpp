@@ -15,7 +15,7 @@ gat::gat(std::string path){
     }
 }
 
-int gat::predict(std::vector<unsigned int> nodes, 
+std::string gat::predict(std::vector<unsigned int> nodes, 
                  std::vector<unsigned int> inEdges,
                  std::vector<unsigned int> outEdges,  
                  std::vector<unsigned int> edge_attr){
@@ -43,9 +43,22 @@ int gat::predict(std::vector<unsigned int> nodes,
     inputs.push_back(batch);
 
     auto out = model.forward(inputs).toTensor();
-    int choice = out.argmin().item<int>();
+    std::vector<float> v(out.data_ptr<float>(), out.data_ptr<float>() + out.numel());
 
-    return choice;
+    int choice = -1;
+    float choiceValue = 1000;
+
+    for (int i=0; i<v.size(); i++ ){
+        if(i==4 || i==6) continue;
+        if(v[i]<choiceValue){
+            choiceValue = v[i];
+            choice = i;
+        }
+    }
+
+    const std::string solvers[] = {"bitwuzla", "boolector", "cvc", "mathsat", "STP 2021.0-not in", "yices", "cvc5-not in", "z3"};
+
+    return solvers[choice];
 }
 
 void gat::load_model(std::string path){

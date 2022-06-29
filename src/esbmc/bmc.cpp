@@ -668,7 +668,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
       return smt_convt::P_UNSATISFIABLE;
     }
 
-    int choice = -1;
+    std::string choice = "";
     if(use_sibyl){
       fine_timet prediction_start = current_time();
 
@@ -704,7 +704,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
     {
       if(use_sibyl){
         runtime_solver =
-        std::shared_ptr<smt_convt>(create_solver_factory(esbmc_solvers[choice].name, ns, options, msg));
+        std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
       }
       else{
         runtime_solver =
