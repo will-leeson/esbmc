@@ -31,6 +31,8 @@ target_include_directories(esbmc
     PRIVATE ${CMAKE_BINARY_DIR}/src
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${Boost_INCLUDE_DIRS}
+    PRIVATE ${TorchScatter_INCLUDE_DIR}
+    PRIVATE ${TorchSparse_INCLUDE_DIR}
 )
 
 target_link_libraries(esbmc ${OLD_FRONTEND_TARGETS} ${SOLIDITY_FRONTEND_TARGETS} ${GOTO_CONTRACTOR_TARGETS} clangcfrontend TorchScatter::TorchScatter TorchSparse::TorchSparse prediction

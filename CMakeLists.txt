@@ -82,12 +82,19 @@ endif()
 
 find_package(BISON 2.6.1 REQUIRED)
 find_package(FLEX 2.6.1 REQUIRED)
+find_package(Python3 REQUIRED)
 find_package(Torch REQUIRED)
 find_package(TorchScatter REQUIRED)
 find_package(TorchSparse REQUIRED)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
-find_package(Python3 COMPONENTS Development)
+message(STATUS ${TorchScatter_INCLUDE_DIR})
+message(STATUS ${TorchSparse_INCLUDE_DIR})
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+set(CMAKE_CC_FLAGES "${CMAKE_CC_FLAGS} -gdwarf-3")
+
+#set(Python_ADDITIONAL_VERSIONS 3.8)
+#find_package(Python3 COMPONENTS Development)
 
 # This MUST be executed after BuildStatic since it sets Boost Static flags
 find_package(Boost REQUIRED COMPONENTS filesystem system date_time program_options iostreams)
