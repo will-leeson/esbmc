@@ -40,7 +40,7 @@ public:
 
 protected:
   virtual void get_command_line_options(optionst &options);
-  virtual int do_bmc(bmct &bmc);
+  virtual int do_bmc(bmct &bmc, gat &model);
 
   virtual bool
   get_goto_program(optionst &options, goto_functionst &goto_functions);
@@ -48,27 +48,30 @@ protected:
   virtual bool
   process_goto_program(optionst &options, goto_functionst &goto_functions);
 
-  int doit_k_induction();
-  int doit_k_induction_parallel();
+  int doit_k_induction(gat model);
+  int doit_k_induction_parallel(gat model);
 
-  int doit_falsification();
-  int doit_incremental();
-  int doit_termination();
+  int doit_falsification(gat model);
+  int doit_incremental(gat model);
+  int doit_termination(gat model);
 
   int do_base_case(
     optionst &opts,
     goto_functionst &goto_functions,
-    const BigInt &k_step);
+    const BigInt &k_step,
+    gat &model);
 
   int do_forward_condition(
     optionst &opts,
     goto_functionst &goto_functions,
-    const BigInt &k_step);
+    const BigInt &k_step,
+    gat &model);
 
   int do_inductive_step(
     optionst &opts,
     goto_functionst &goto_functions,
-    const BigInt &k_step);
+    const BigInt &k_step,
+    gat &model);
 
   bool read_goto_binary(goto_functionst &goto_functions);
 
@@ -97,7 +100,6 @@ private:
 
 public:
   goto_functionst goto_functions;
-  gat model;
 };
 
 #endif

@@ -457,6 +457,8 @@ int esbmc_parseoptionst::doit()
     return 1;
   }
 
+  gat model;
+
   if(cmdline.isset("sibyl")){
     msg.status(cmdline.getval("sibyl-model"));
     model.load_model(cmdline.getval("sibyl-model"));
@@ -472,19 +474,19 @@ int esbmc_parseoptionst::doit()
   }
 
   if(cmdline.isset("termination"))
-    return doit_termination();
+    return doit_termination(model);
 
   if(cmdline.isset("incremental-bmc"))
-    return doit_incremental();
+    return doit_incremental(model);
 
   if(cmdline.isset("falsification"))
-    return doit_falsification();
+    return doit_falsification(model);
 
   if(cmdline.isset("k-induction"))
-    return doit_k_induction();
+    return doit_k_induction(model);
 
   if(cmdline.isset("k-induction-parallel"))
-    return doit_k_induction_parallel();
+    return doit_k_induction_parallel(model);
 
   optionst opts;
   get_command_line_options(opts);
@@ -507,14 +509,15 @@ int esbmc_parseoptionst::doit()
 
   // do actual BMC
   bmct bmc(goto_functions, opts, context, msg);
-  if(model.is_loaded()){
-    bmc.set_model(model);
+  if(!model.is_loaded()){
+    msg.error("Model is not loaded");
+    abort();
   }
 
-  return do_bmc(bmc);
+  return do_bmc(bmc, model);
 }
 
-int esbmc_parseoptionst::doit_k_induction_parallel()
+int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
 {
 #ifdef _WIN32
   msg.error("Windows does not support parallel kind");
@@ -850,8 +853,9 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
     for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
     {
       bmct bmc(goto_functions, opts, context, msg);
-      if(model.is_loaded()){
-        bmc.set_model(model);
+      if(!model.is_loaded()){
+        msg.error("Model is not loaded");
+        abort();
       }
       bmc.options.set_option("unwind", integer2string(k_step));
 
@@ -861,7 +865,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
       int res = smt_convt::P_ERROR;
       try
       {
-        res = do_bmc(bmc);
+        res = do_bmc(bmc, model);
       }
       catch(...)
       {
@@ -958,8 +962,9 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
     for(BigInt k_step = 2; k_step <= max_k_step; k_step += k_step_inc)
     {
       bmct bmc(goto_functions, opts, context, msg);
-      if(model.is_loaded()){
-        bmc.set_model(model);
+      if(!model.is_loaded()){
+        msg.error("Model is not loaded");
+        abort();
       }
       bmc.options.set_option("unwind", integer2string(k_step));
 
@@ -970,7 +975,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
       int res = smt_convt::P_ERROR;
       try
       {
-        res = do_bmc(bmc);
+        res = do_bmc(bmc, model);
       }
       catch(...)
       {
@@ -1029,8 +1034,9 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
     for(BigInt k_step = 2; k_step <= max_k_step; k_step += k_step_inc)
     {
       bmct bmc(goto_functions, opts, context, msg);
-      if(model.is_loaded()){
-        bmc.set_model(model);
+      if(!model.is_loaded()){
+        msg.error("Model is not loaded");
+        abort();
       }
 
       bmc.options.set_option("unwind", integer2string(k_step));
@@ -1041,7 +1047,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
       int res = smt_convt::P_ERROR;
       try
       {
-        res = do_bmc(bmc);
+        res = do_bmc(bmc, model);
       }
       catch(...)
       {
@@ -1086,7 +1092,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
   return 0;
 }
 
-int esbmc_parseoptionst::doit_k_induction()
+int esbmc_parseoptionst::doit_k_induction(gat model)
 {
   optionst opts;
   get_command_line_options(opts);
@@ -1114,13 +1120,13 @@ int esbmc_parseoptionst::doit_k_induction()
 
   for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
   {
-    if(do_base_case(opts, goto_functions, k_step))
+    if(do_base_case(opts, goto_functions, k_step, model))
       return true;
 
-    if(!do_forward_condition(opts, goto_functions, k_step))
+    if(!do_forward_condition(opts, goto_functions, k_step, model))
       return false;
 
-    if(!do_inductive_step(opts, goto_functions, k_step))
+    if(!do_inductive_step(opts, goto_functions, k_step, model))
       return false;
   }
 
@@ -1130,7 +1136,7 @@ int esbmc_parseoptionst::doit_k_induction()
   return 0;
 }
 
-int esbmc_parseoptionst::doit_falsification()
+int esbmc_parseoptionst::doit_falsification(gat model)
 {
   optionst opts;
   get_command_line_options(opts);
@@ -1158,7 +1164,7 @@ int esbmc_parseoptionst::doit_falsification()
 
   for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
   {
-    if(do_base_case(opts, goto_functions, k_step))
+    if(do_base_case(opts, goto_functions, k_step, model))
       return true;
   }
 
@@ -1168,7 +1174,7 @@ int esbmc_parseoptionst::doit_falsification()
   return 0;
 }
 
-int esbmc_parseoptionst::doit_incremental()
+int esbmc_parseoptionst::doit_incremental(gat model)
 {
   optionst opts;
   get_command_line_options(opts);
@@ -1197,10 +1203,10 @@ int esbmc_parseoptionst::doit_incremental()
 
   for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
   {
-    if(do_base_case(opts, goto_functions, k_step))
+    if(do_base_case(opts, goto_functions, k_step, model))
       return true;
 
-    if(!do_forward_condition(opts, goto_functions, k_step))
+    if(!do_forward_condition(opts, goto_functions, k_step, model))
       return false;
   }
 
@@ -1210,7 +1216,7 @@ int esbmc_parseoptionst::doit_incremental()
   return 0;
 }
 
-int esbmc_parseoptionst::doit_termination()
+int esbmc_parseoptionst::doit_termination(gat model)
 {
   optionst opts;
   get_command_line_options(opts);
@@ -1238,7 +1244,7 @@ int esbmc_parseoptionst::doit_termination()
 
   for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
   {
-    if(!do_forward_condition(opts, goto_functions, k_step))
+    if(!do_forward_condition(opts, goto_functions, k_step, model))
       return false;
 
     /* Disable this for now as it is causing more than 100 errors on SV-COMP
@@ -1256,7 +1262,8 @@ int esbmc_parseoptionst::doit_termination()
 int esbmc_parseoptionst::do_base_case(
   optionst &opts,
   goto_functionst &goto_functions,
-  const BigInt &k_step)
+  const BigInt &k_step,
+  gat &model)
 {
   opts.set_option("base-case", true);
   opts.set_option("forward-condition", false);
@@ -1266,14 +1273,15 @@ int esbmc_parseoptionst::do_base_case(
   opts.set_option("partial-loops", false);
 
   bmct bmc(goto_functions, opts, context, msg);
-  if(model.is_loaded()){
-    bmc.set_model(model);
+  if(!model.is_loaded()){
+    msg.error("Model is not loaded");
+    abort();
   }
 
   bmc.options.set_option("unwind", integer2string(k_step));
 
   msg.status(fmt::format("*** Checking base case, k = {:d}", k_step));
-  switch(do_bmc(bmc))
+  switch(do_bmc(bmc, model))
   {
   case smt_convt::P_UNSATISFIABLE:
   case smt_convt::P_SMTLIB:
@@ -1295,7 +1303,8 @@ int esbmc_parseoptionst::do_base_case(
 int esbmc_parseoptionst::do_forward_condition(
   optionst &opts,
   goto_functionst &goto_functions,
-  const BigInt &k_step)
+  const BigInt &k_step,
+  gat &model)
 {
   if(opts.get_bool_option("disable-forward-condition"))
     return true;
@@ -1315,15 +1324,16 @@ int esbmc_parseoptionst::do_forward_condition(
   opts.set_option("no-assertions", true);
 
   bmct bmc(goto_functions, opts, context, msg);
-  if(model.is_loaded()){
-    bmc.set_model(model);
+  if(!model.is_loaded()){
+    msg.error("Model is not loaded");
+    abort();
   }
 
 
   bmc.options.set_option("unwind", integer2string(k_step));
 
   msg.status(fmt::format("*** Checking forward condition, k = {:d}", k_step));
-  auto res = do_bmc(bmc);
+  auto res = do_bmc(bmc, model);
 
   // Restore the no assertion flag, before checking the other steps
   opts.set_option("no-assertions", no_assertions);
@@ -1353,7 +1363,8 @@ int esbmc_parseoptionst::do_forward_condition(
 int esbmc_parseoptionst::do_inductive_step(
   optionst &opts,
   goto_functionst &goto_functions,
-  const BigInt &k_step)
+  const BigInt &k_step,
+  gat &model)
 {
   // Don't run inductive step for k_step == 1
   if(k_step == 1)
@@ -1375,13 +1386,14 @@ int esbmc_parseoptionst::do_inductive_step(
   opts.set_option("partial-loops", true);
 
   bmct bmc(goto_functions, opts, context, msg);
-  if(model.is_loaded()){
-    bmc.set_model(model);
+  if(!model.is_loaded()){
+    msg.error("Model is not loaded");
+    abort();
   }
   bmc.options.set_option("unwind", integer2string(k_step));
 
   msg.status(fmt::format("*** Checking inductive step, k = {:d}", k_step));
-  switch(do_bmc(bmc))
+  switch(do_bmc(bmc, model))
   {
   case smt_convt::P_SATISFIABLE:
   case smt_convt::P_SMTLIB:
@@ -1744,12 +1756,12 @@ bool esbmc_parseoptionst::process_goto_program(
   return false;
 }
 
-int esbmc_parseoptionst::do_bmc(bmct &bmc)
+int esbmc_parseoptionst::do_bmc(bmct &bmc, gat &model)
 { // do actual BMC
 
   msg.status("Starting Bounded Model Checking");
 
-  smt_convt::resultt res = bmc.start_bmc();
+  smt_convt::resultt res = bmc.start_bmc(model);
   if(res == smt_convt::P_ERROR)
     abort();
 
