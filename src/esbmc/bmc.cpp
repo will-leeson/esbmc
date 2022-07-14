@@ -363,22 +363,22 @@ void bmct::report_result(smt_convt::resultt &res)
   }
 }
 
-smt_convt::resultt bmct::start_bmc()
+smt_convt::resultt bmct::start_bmc(gat &model)
 {
   std::shared_ptr<symex_target_equationt> eq;
-  smt_convt::resultt res = run(eq);
+  smt_convt::resultt res = run(eq, model);
   report_trace(res, eq);
   report_result(res);
   return res;
 }
 
-smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
+smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq, gat &model)
 {
   symex->options.set_option("unwind", options.get_option("unwind"));
   symex->setup_for_new_explore();
 
   if(options.get_bool_option("schedule"))
-    return run_thread(eq);
+    return run_thread(eq, model);
 
   smt_convt::resultt res;
   do
@@ -389,7 +389,7 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
 
     fine_timet bmc_start = current_time();
     
-    res = run_thread(eq);
+    res = run_thread(eq, model);
 
     if(res == smt_convt::P_SATISFIABLE)
     {
@@ -555,7 +555,7 @@ void bmct::bidirectional_search(
   }
 }
 
-smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
+smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq, gat &model)
 {
   std::shared_ptr<goto_symext::symex_resultt> result;
 
@@ -677,10 +677,11 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 
       sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
-      gat theModel(options.get_option("sibyl-model"));
+      // gat theModel(options.get_option("sibyl-model"));
 
-      if (theModel.is_loaded()){
-        choice = theModel.predict(sibyl_solver->nodes, sibyl_solver->inEdges, sibyl_solver->outEdges, sibyl_solver->edge_attr);
+      if (model.is_loaded()){
+        msg.status("The model is loaded");
+        choice = model.predict(sibyl_solver->nodes, sibyl_solver->inEdges, sibyl_solver->outEdges, sibyl_solver->edge_attr);
       }
       else{
         msg.error("Model is not loaded");
@@ -732,8 +733,4 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
     msg.error("Out of memory\n");
     return smt_convt::P_ERROR;
   }
-}
-
-void bmct::set_model(gat _model){
-  model = _model;
 }

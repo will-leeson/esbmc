@@ -37,10 +37,9 @@ public:
   BigInt interleaving_number;
   BigInt interleaving_failed;
   bool use_sibyl;
-  void set_model(gat _model);
 
-  virtual smt_convt::resultt start_bmc();
-  virtual smt_convt::resultt run(std::shared_ptr<symex_target_equationt> &eq);
+  virtual smt_convt::resultt start_bmc(gat &model);
+  virtual smt_convt::resultt run(std::shared_ptr<symex_target_equationt> &eq, gat &model);
   virtual ~bmct() = default;
 
 protected:
@@ -83,9 +82,7 @@ protected:
     std::shared_ptr<smt_convt> &smt_conv,
     std::shared_ptr<symex_target_equationt> &eq);
 
-  smt_convt::resultt run_thread(std::shared_ptr<symex_target_equationt> &eq);
-
-  gat model;
+  smt_convt::resultt run_thread(std::shared_ptr<symex_target_equationt> &eq, gat &model);
 };
 
 #endif
