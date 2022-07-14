@@ -25,9 +25,9 @@ std::string gat::predict(std::vector<unsigned int> nodes,
     //Need to convert it to a Float for the model
     auto nodeTensor = torch::from_blob(nodes.data(), {(unsigned int)nodes.size()/67,67}, opts).to(torch::kFloat32);
 
-    auto inEdgeTensor = torch::from_blob(inEdges.data(), (unsigned int)inEdges.size(), opts).to(torch::kI64);
     auto outEdgeTensor = torch::from_blob(outEdges.data(), (unsigned int)outEdges.size(), opts).to(torch::kI64);
-    auto edgeTensor = torch::stack({inEdgeTensor, outEdgeTensor});
+    auto inEdgeTensor = torch::from_blob(inEdges.data(), (unsigned int)inEdges.size(), opts).to(torch::kI64);
+    auto edgeTensor = torch::stack({outEdgeTensor, inEdgeTensor});
 
     auto edge_attrTensor = torch::from_blob(edge_attr.data(), edge_attr.size(), opts).to(torch::kFloat32);
 
@@ -43,20 +43,9 @@ std::string gat::predict(std::vector<unsigned int> nodes,
     inputs.push_back(batch);
 
     auto out = model.forward(inputs).toTensor();
-    std::vector<float> v(out.data_ptr<float>(), out.data_ptr<float>() + out.numel());
+    int choice = out.argmin().item<int>();
 
-    int choice = -1;
-    float choiceValue = 1000;
-
-    for (int i=0; i<v.size(); i++ ){
-        if(i==4 || i==6) continue;
-        if(v[i]<choiceValue){
-            choiceValue = v[i];
-            choice = i;
-        }
-    }
-
-    const std::string solvers[] = {"bitwuzla", "boolector", "cvc", "mathsat", "STP 2021.0-not in", "yices", "cvc5-not in", "z3"};
+    const std::string solvers[] = {"bitwuzla", "boolector", "cvc", "mathsat", "yices", "z3"};
 
     return solvers[choice];
 }
