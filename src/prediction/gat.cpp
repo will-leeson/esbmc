@@ -25,7 +25,13 @@ std::string gat::predict(std::vector<unsigned int> nodes,
     //Need to declare it as int type to avoid conversion issues
     auto opts = torch::TensorOptions().dtype(torch::kInt32);
     //Need to convert it to a Float for the model
-    auto nodeTensor = torch::from_blob(nodes.data(), {(unsigned int)nodes.size()/67,67}, opts).to(torch::kFloat32);
+    auto nodeTensor = torch::zeros({(long)nodes.size(), 67},opts).to(torch::kFloat32);
+
+    for(int i=0; i<nodes.size(); i++){
+        int j = nodes[i];
+        nodeTensor.index_put_({i, j},1);
+    }
+    std::cout<<nodeTensor<<std::endl;
 
     auto outEdgeTensor = torch::from_blob(outEdges.data(), (unsigned int)outEdges.size(), opts).to(torch::kI64);
     auto inEdgeTensor = torch::from_blob(inEdges.data(), (unsigned int)inEdges.size(), opts).to(torch::kI64);
