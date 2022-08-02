@@ -677,8 +677,6 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
 
       sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
-      // gat theModel(options.get_option("sibyl-model"));
-
       if (model.is_loaded()){
         msg.status("The model is loaded");
         choice = model.predict(sibyl_solver->nodes, sibyl_solver->inEdges, sibyl_solver->outEdges, sibyl_solver->edge_attr);
@@ -703,7 +701,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
 
     if(!options.get_bool_option("smt-during-symex"))
     {
-      if(use_sibyl){
+      if(use_sibyl && !options.get_bool_option("predict-only")){
         runtime_solver =
         std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
       }

@@ -167,6 +167,7 @@ const struct group_opt_templ all_cmd_options[] = {
     {"sibyl-model",
      boost::program_options::value<std::string>(),
      "Location of Pretrained Sibyl Model"},
+    {"predict-only", NULL, "Just predict with Sibyl"},
     {"boolector", NULL, "use Boolector (default),"},
     {"z3", NULL, "use Z3"},
     {"mathsat", NULL, "use MathSAT"},

@@ -509,7 +509,7 @@ int esbmc_parseoptionst::doit()
 
   // do actual BMC
   bmct bmc(goto_functions, opts, context, msg);
-  if(!model.is_loaded()){
+  if(!model.is_loaded() && opts.get_bool_option("sibyl")){
     msg.error("Model is not loaded");
     abort();
   }
@@ -853,7 +853,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
     for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
     {
       bmct bmc(goto_functions, opts, context, msg);
-      if(!model.is_loaded()){
+      if(!model.is_loaded() && opts.get_bool_option("sibyl")){
         msg.error("Model is not loaded");
         abort();
       }
@@ -962,7 +962,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
     for(BigInt k_step = 2; k_step <= max_k_step; k_step += k_step_inc)
     {
       bmct bmc(goto_functions, opts, context, msg);
-      if(!model.is_loaded()){
+      if(!model.is_loaded() && opts.get_bool_option("sibyl")){
         msg.error("Model is not loaded");
         abort();
       }
@@ -1034,7 +1034,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
     for(BigInt k_step = 2; k_step <= max_k_step; k_step += k_step_inc)
     {
       bmct bmc(goto_functions, opts, context, msg);
-      if(!model.is_loaded()){
+      if(!model.is_loaded() && opts.get_bool_option("sibyl")){
         msg.error("Model is not loaded");
         abort();
       }
@@ -1273,7 +1273,7 @@ int esbmc_parseoptionst::do_base_case(
   opts.set_option("partial-loops", false);
 
   bmct bmc(goto_functions, opts, context, msg);
-  if(!model.is_loaded()){
+  if(!model.is_loaded() && opts.get_bool_option("sibyl")){
     msg.error("Model is not loaded");
     abort();
   }
@@ -1324,7 +1324,7 @@ int esbmc_parseoptionst::do_forward_condition(
   opts.set_option("no-assertions", true);
 
   bmct bmc(goto_functions, opts, context, msg);
-  if(!model.is_loaded()){
+  if(!model.is_loaded() && opts.get_bool_option("sibyl")){
     msg.error("Model is not loaded");
     abort();
   }
@@ -1386,7 +1386,7 @@ int esbmc_parseoptionst::do_inductive_step(
   opts.set_option("partial-loops", true);
 
   bmct bmc(goto_functions, opts, context, msg);
-  if(!model.is_loaded()){
+  if(!model.is_loaded() && opts.get_bool_option("sibyl")){
     msg.error("Model is not loaded");
     abort();
   }

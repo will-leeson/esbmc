@@ -6,11 +6,13 @@ gat::gat(){
 }
 
 gat::gat(std::string path){
+    std::cout<<"Creating model with "<<path<<std::endl;
     try{
         model = torch::jit::load(path);
         loaded = true;
     }
     catch(const c10::Error &e){
+        std::cout<<e.what()<<std::endl;
         loaded = false;
     }
 }
@@ -51,11 +53,13 @@ std::string gat::predict(std::vector<unsigned int> nodes,
 }
 
 void gat::load_model(std::string path){
+    std::cout<<"Loading "<<path<<std::endl;
     try{
         model = torch::jit::load(path);
         loaded = true;
     }
     catch(const c10::Error &e){
+        std::cout<<e.what()<<std::endl;
         loaded = false;
     }
 }

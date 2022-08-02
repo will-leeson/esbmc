@@ -562,7 +562,9 @@ void sibyl_smt_ast::dump() const
 
 void sibyl_convt::dump_smt()
 {
-  msg.error("Sibyl doesn't support dumping");
+    if(!options.get_bool_option("predict-only")){
+      msg.error("Sibyl doesn't support dumping");
+    }
 }
 
 void sibyl_convt::print_model()
