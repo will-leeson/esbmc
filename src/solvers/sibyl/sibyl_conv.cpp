@@ -9,14 +9,7 @@
 #define new_ast new_solver_ast<sibyl_smt_ast>
 
 void sibyl_convt::insert_node(unsigned int x){
-    for(int i=0; i<67; i++){
-        if(i == x){
-            nodes.push_back(1);
-        }
-        else{
-            nodes.push_back(0);
-        }
-    }
+    nodes.push_back(x);
 }
 
 unsigned int sibyl_convt::emit_ast(const sibyl_smt_ast* ast){
@@ -562,9 +555,26 @@ void sibyl_smt_ast::dump() const
 
 void sibyl_convt::dump_smt()
 {
-    if(!options.get_bool_option("predict-only")){
-      msg.error("Sibyl doesn't support dumping");
-    }
+    std::ostringstream nodesStream;
+    std::copy(nodes.begin(), nodes.end() - 1, std::ostream_iterator<int>(nodesStream, ", "));
+    nodesStream << nodes.back();
+
+    std::ostringstream outEdgeStream;
+    std::copy(outEdges.begin(), outEdges.end() - 1, std::ostream_iterator<int>(outEdgeStream, ", "));
+    outEdgeStream << outEdges.back();
+
+    std::ostringstream inEdgeStream;
+    std::copy(inEdges.begin(), inEdges.end() - 1, std::ostream_iterator<int>(inEdgeStream, ", "));
+    inEdgeStream << inEdges.back();
+
+    std::ostringstream attrStream;
+    std::copy(edge_attr.begin(), edge_attr.end() - 1, std::ostream_iterator<int>(attrStream, ", "));
+    attrStream << edge_attr.back();
+
+    msg.status("Nodes: " + nodesStream.str());
+    msg.status("OutEdge: " + outEdgeStream.str());
+    msg.status("InEdge: " + inEdgeStream.str());
+    msg.status("Edge Attr: " + attrStream.str());
 }
 
 void sibyl_convt::print_model()
