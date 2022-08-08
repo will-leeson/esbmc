@@ -570,25 +570,12 @@ void bmct::bidirectional_search(
   }
 }
 
-void * mySleep(void * TO){
-  int *timeout = (int *)TO;
-  std::cout<<"Starting Sleep"<<std::endl;
-  sleep(*timeout);
-  std::cout<<"Sleep Ended"<<std::endl;
-
-  pthread_cond_signal(&condition);
-  pthread_exit(NULL);
-}
-
 void * bmct::run_parallel_decision_procedure(void * data){
   thread_data *tdata = (thread_data *)data;
-  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
   //auto res = run_decision_procedure(runtime_solver, eq);
   tdata->result = tdata->bmc->run_decision_procedure(tdata->smt_conv,tdata->eq);
   tdata->done = true;
-  pthread_cond_signal(&condition);
   pthread_exit(NULL);
 }
 
@@ -770,11 +757,12 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
     runtime_solver->set_interupt(false);
     runtime_solverParallel->set_interupt(false);
     assert(!runtime_solver->interupt_finished());
-    pthread_create(&tid1, NULL, run_parallel_decision_procedure, (void *)&d1);
-    pthread_create(&tid2, NULL, run_parallel_decision_procedure, (void *)&d2);
+    (void) pthread_create(&tid1, NULL, run_parallel_decision_procedure, (void *)&d1);
+    (void) pthread_create(&tid2, NULL, run_parallel_decision_procedure, (void *)&d2);
     
     msg.status("Waiting on threads");
-    pthread_cond_wait(&condition, &mutex);
+
+    while(!(d1.done || d2.done)) ;
 
     if(d1.done){
       runtime_solverParallel->set_interupt(true);
@@ -782,7 +770,6 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
       while(!runtime_solverParallel->interupt_finished()){
         msg.status("Blarg1");
       }
-      pthread_cancel(tid2);
 
       res = d1.result;
     }
@@ -792,7 +779,6 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
       while(!runtime_solver->interupt_finished()){
         msg.status("Blarg2");
       }
-      pthread_cancel(tid1);
 
       res = d2.result;
     }
@@ -800,6 +786,9 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
       msg.error("Somehow the wait condition was triggered without either solver being done");
       abort();
     }
+
+    (void) pthread_join(tid1, NULL);
+    (void) pthread_join(tid2, NULL);
 
     return res;
   }
