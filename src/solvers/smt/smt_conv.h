@@ -531,6 +531,10 @@ public:
   /** Method to print the SMT model */
   virtual void print_model();
 
+  /** Method to interupt solver */
+  virtual void set_interupt(bool val);
+  virtual bool interupt_finished();
+
   /** @} */
 
   /** @{

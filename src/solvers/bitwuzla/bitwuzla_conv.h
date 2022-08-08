@@ -106,9 +106,12 @@ public:
 
   void dump_smt() override;
   void print_model() override;
+  void set_interupt(bool val) override;
+  bool interupt_finished() override;
 
   // Members
   Bitwuzla *bitw;
+  bool terminate = false;
 
   typedef std::unordered_map<std::string, smt_astt> symtable_type;
   symtable_type symtable;

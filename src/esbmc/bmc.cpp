@@ -43,8 +43,22 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <util/show_symbol_table.h>
 #include <util/time_stopping.h>
 #include <prediction/gat.h>
+#include <pthread.h>
 
 #include <iostream>
+
+pthread_cond_t condition;
+pthread_mutex_t mutex;
+typedef void * (*THREADFUNCPTR)(void *);
+
+struct thread_data
+{
+  bmct *bmc;
+  std::shared_ptr<smt_convt> smt_conv;
+  std::shared_ptr<symex_target_equationt> eq;
+  smt_convt::resultt result;
+  bool done;
+};
 
 bmct::bmct(
   goto_functionst &funcs,
@@ -88,6 +102,7 @@ void bmct::do_cbmc(
   std::shared_ptr<smt_convt> &smt_conv,
   std::shared_ptr<symex_target_equationt> &eq)
 {
+  msg.status("Converting");
   eq->convert(*smt_conv.get());
 }
 
@@ -555,6 +570,28 @@ void bmct::bidirectional_search(
   }
 }
 
+void * mySleep(void * TO){
+  int *timeout = (int *)TO;
+  std::cout<<"Starting Sleep"<<std::endl;
+  sleep(*timeout);
+  std::cout<<"Sleep Ended"<<std::endl;
+
+  pthread_cond_signal(&condition);
+  pthread_exit(NULL);
+}
+
+void * bmct::run_parallel_decision_procedure(void * data){
+  thread_data *tdata = (thread_data *)data;
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+  //auto res = run_decision_procedure(runtime_solver, eq);
+  tdata->result = tdata->bmc->run_decision_procedure(tdata->smt_conv,tdata->eq);
+  tdata->done = true;
+  pthread_cond_signal(&condition);
+  pthread_exit(NULL);
+}
+
 smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq, gat &model)
 {
   std::shared_ptr<goto_symext::symex_resultt> result;
@@ -707,11 +744,64 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
       }
       else{
         runtime_solver =
-        std::shared_ptr<smt_convt>(create_solver_factory("", ns, options, msg));
+        std::shared_ptr<smt_convt>(create_solver_factory("boolector", ns, options, msg));
+        runtime_solverParallel =
+        std::shared_ptr<smt_convt>(create_solver_factory("bitwuzla", ns, options, msg));
       }
     }
+
+    pthread_t tid1,tid2;
+    std::shared_ptr<symex_target_equationt> eq2 = std::make_shared<symex_target_equationt>(*eq);
+    thread_data d1 = {.bmc=this,
+      .smt_conv=runtime_solver,
+      .eq=eq,
+      .result = smt_convt::resultt::P_ERROR,
+      .done = false
+    };
+    thread_data d2 = {.bmc=this,
+      .smt_conv=runtime_solverParallel,
+      .eq=eq2,
+      .result = smt_convt::resultt::P_ERROR,
+      .done = false
+    };
+    smt_convt::resultt res;
+
+    msg.status("Starting threads");
+    runtime_solver->set_interupt(false);
+    runtime_solverParallel->set_interupt(false);
+    assert(!runtime_solver->interupt_finished());
+    pthread_create(&tid1, NULL, run_parallel_decision_procedure, (void *)&d1);
+    pthread_create(&tid2, NULL, run_parallel_decision_procedure, (void *)&d2);
     
-    return run_decision_procedure(runtime_solver, eq);
+    msg.status("Waiting on threads");
+    pthread_cond_wait(&condition, &mutex);
+
+    if(d1.done){
+      runtime_solverParallel->set_interupt(true);
+      msg.status("Killing solver: " + runtime_solverParallel->solver_text());
+      while(!runtime_solverParallel->interupt_finished()){
+        msg.status("Blarg1");
+      }
+      pthread_cancel(tid2);
+
+      res = d1.result;
+    }
+    else if(d2.done){
+      runtime_solver->set_interupt(true);
+      msg.status("Killing solver: " + runtime_solver->solver_text());
+      while(!runtime_solver->interupt_finished()){
+        msg.status("Blarg2");
+      }
+      pthread_cancel(tid1);
+
+      res = d2.result;
+    }
+    else{
+      msg.error("Somehow the wait condition was triggered without either solver being done");
+      abort();
+    }
+
+    return res;
   }
 
   catch(std::string &error_str)

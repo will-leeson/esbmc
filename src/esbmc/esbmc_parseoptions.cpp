@@ -1337,7 +1337,6 @@ int esbmc_parseoptionst::do_forward_condition(
 
   // Restore the no assertion flag, before checking the other steps
   opts.set_option("no-assertions", no_assertions);
-
   switch(res)
   {
   case smt_convt::P_SATISFIABLE:

@@ -2667,6 +2667,18 @@ void smt_convt::print_model()
   abort();
 }
 
+void smt_convt::set_interupt(bool val){
+  msg.error(
+    fmt::format("SMT interuption not implemented for {}", solver_text()));
+  abort();
+}
+
+bool smt_convt::interupt_finished(){
+  msg.error(
+    fmt::format("SMT interuption not implemented for {}", solver_text()));
+  abort();
+}
+
 tvt smt_convt::l_get(smt_astt a)
 {
   return get_bool(a) ? tvt(true) : tvt(false);

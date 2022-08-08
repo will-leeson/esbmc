@@ -10,6 +10,16 @@ void error_handler(const char *msg)
   abort();
 }
 
+int32_t termination_handler(void *terminate){
+  bool *t = (bool *)terminate;
+  if(*t){
+    return 1;
+  }
+  else{
+    return 0;
+  }
+}
+
 smt_convt *create_new_boolector_solver(
   const optionst &options,
   const namespacet &ns,
@@ -43,6 +53,7 @@ boolector_convt::boolector_convt(
   if(options.get_bool_option("smt-during-symex"))
     boolector_set_opt(btor, BTOR_OPT_INCREMENTAL, 1);
   boolector_set_abort(error_handler);
+  boolector_set_term(btor, termination_handler, (void *)&terminate);
 }
 
 boolector_convt::~boolector_convt()
@@ -806,6 +817,14 @@ void btor_smt_ast::dump() const
   auto f = msg.get_temp_file();
   boolector_dump_smt2_node(boolector_get_btor(a), f.file(), a);
   msg.insert_file_contents(VerbosityLevel::Debug, f.file());
+}
+
+void boolector_convt::set_interupt(bool val){
+  terminate = val;
+}
+
+bool boolector_convt::interupt_finished(){
+  return boolector_terminate(btor);
 }
 
 void boolector_convt::print_model()

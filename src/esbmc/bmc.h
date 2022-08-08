@@ -41,6 +41,9 @@ public:
   virtual smt_convt::resultt start_bmc(gat &model);
   virtual smt_convt::resultt run(std::shared_ptr<symex_target_equationt> &eq, gat &model);
   virtual ~bmct() = default;
+  virtual smt_convt::resultt run_decision_procedure(
+    std::shared_ptr<smt_convt> &smt_conv,
+    std::shared_ptr<symex_target_equationt> &eq);
 
 protected:
   const contextt &context;
@@ -48,10 +51,10 @@ protected:
   const messaget &msg;
   std::shared_ptr<smt_convt> prediction_solver;
   std::shared_ptr<smt_convt> runtime_solver;
+  std::shared_ptr<smt_convt> runtime_solverParallel;
   std::shared_ptr<reachability_treet> symex;
-  virtual smt_convt::resultt run_decision_procedure(
-    std::shared_ptr<smt_convt> &smt_conv,
-    std::shared_ptr<symex_target_equationt> &eq);
+
+  static void * run_parallel_decision_procedure(void * data);
 
   virtual void do_cbmc(
     std::shared_ptr<smt_convt> &smt_conv,
