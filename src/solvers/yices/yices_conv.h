@@ -158,6 +158,10 @@ public:
 
   void print_model() override;
 
+  void set_interupt(bool val) override;
+  bool interupt_finished() override;
+  bool terminate = false; 
+
   context_t *yices_ctx;
 };
 

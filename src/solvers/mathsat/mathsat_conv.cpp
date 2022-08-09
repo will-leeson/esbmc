@@ -26,6 +26,17 @@ static const char *mathsat_config =
 
 #define new_ast new_solver_ast<mathsat_smt_ast>
 
+int32_t mathsat_termination_handler(void *terminate){
+  bool *t = (bool *)terminate;
+  if(*t){
+    return 1;
+  }
+  else{
+    return 0;
+  }
+}
+
+
 void mathsat_convt::check_msat_error(msat_term &r) const
 {
   if(MSAT_ERROR_TERM(r))
@@ -62,6 +73,7 @@ mathsat_convt::mathsat_convt(
   cfg = msat_parse_config(mathsat_config);
   msat_set_option(cfg, "model_generation", "true");
   env = msat_create_env(cfg);
+  msat_set_termination_test(env, mathsat_termination_handler, (void *)&terminate);
 }
 
 mathsat_convt::~mathsat_convt()
@@ -923,6 +935,13 @@ void mathsat_convt::dump_smt()
     msg.status(msat_to_smtlib2(env, asserted_formulas[i]));
 
   msat_free(asserted_formulas);
+}
+
+void mathsat_convt::set_interupt(bool val){
+  terminate = val;
+}
+bool mathsat_convt::interupt_finished(){
+  return terminate;
 }
 
 smt_astt mathsat_convt::mk_smt_fpbv_fma(

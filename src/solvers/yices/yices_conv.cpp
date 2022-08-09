@@ -99,8 +99,10 @@ void yices_convt::pop_ctx()
 smt_convt::resultt yices_convt::dec_solve()
 {
   pre_solve();
+  msg.status("starting yices");
 
   smt_status_t result = yices_check_context(yices_ctx, nullptr);
+  msg.status("finished yices");
   if(result == STATUS_SAT)
     return smt_convt::P_SATISFIABLE;
 
@@ -1170,4 +1172,16 @@ void yices_smt_ast::dump() const
   yices_pp_term(f.file(), a, 80, 10, 0);
   yices_pp_type(f.file(), to_solver_smt_sort<type_t>(sort)->s, 80, 10, 0);
   msg.insert_file_contents(VerbosityLevel::Debug, f.file());
+}
+
+void yices_convt::set_interupt(bool val) {
+  if(val){
+    yices_stop_search(yices_ctx);  
+    yices_exit();
+  }
+  terminate = val;
+}
+
+bool yices_convt::interupt_finished() {
+  return terminate;
 }

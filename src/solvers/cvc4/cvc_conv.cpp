@@ -1288,3 +1288,19 @@ void cvc_smt_ast::dump() const
   a.printAst(oss, 0);
   msg.debug(oss.str());
 }
+
+void cvc_convt::set_interupt(bool val) {
+  try{
+    smt.interrupt();
+  }
+  catch(CVC4::ModalException){
+    msg.error("Tried to interupt a nonexitsing query");
+    abort();
+  }
+
+  terminate = true;
+}
+
+bool cvc_convt::interupt_finished() {
+  return terminate;
+}

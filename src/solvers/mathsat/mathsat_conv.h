@@ -148,7 +148,10 @@ public:
 
   void dump_smt() override;
   void print_model() override;
+  void set_interupt(bool val) override;
+  bool interupt_finished() override;
 
+  bool terminate = false;
   // MathSAT data.
   msat_config cfg;
   msat_env env;

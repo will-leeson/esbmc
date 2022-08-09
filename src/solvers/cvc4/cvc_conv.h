@@ -152,7 +152,12 @@ public:
 
   void dump_smt() override;
 
+  void set_interupt(bool val) override;
+  bool interupt_finished() override;
+
   unsigned int to_bv_counter;
+
+  bool terminate = false;
 
   CVC4::ExprManager em;
   CVC4::SmtEngine smt;

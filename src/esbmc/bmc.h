@@ -32,6 +32,8 @@ public:
     contextt &_context,
     const messaget &_message_handler);
 
+  bmct(const bmct& rhs);
+
   optionst &options;
 
   BigInt interleaving_number;
@@ -45,16 +47,21 @@ public:
     std::shared_ptr<smt_convt> &smt_conv,
     std::shared_ptr<symex_target_equationt> &eq);
 
+  virtual smt_convt::resultt run_parallel_decision_procedure(
+    std::shared_ptr<smt_convt> &smt_conv1,
+    std::shared_ptr<smt_convt> &smt_conv2,
+    std::shared_ptr<symex_target_equationt> &eq
+  );
+
 protected:
   const contextt &context;
   namespacet ns;
   const messaget &msg;
   std::shared_ptr<smt_convt> prediction_solver;
   std::shared_ptr<smt_convt> runtime_solver;
-  std::shared_ptr<smt_convt> runtime_solverParallel;
+  std::shared_ptr<smt_convt> solver1;
+  std::shared_ptr<smt_convt> solver2;;
   std::shared_ptr<reachability_treet> symex;
-
-  static void * run_parallel_decision_procedure(void * data);
 
   virtual void do_cbmc(
     std::shared_ptr<smt_convt> &smt_conv,
