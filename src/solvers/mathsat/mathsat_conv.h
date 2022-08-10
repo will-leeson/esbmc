@@ -30,6 +30,11 @@ public:
   resultt dec_solve() override;
   const std::string solver_text() override;
 
+  const std::string raw_solver_text() override
+  {
+    return "mathsat";
+  }
+
   void assert_ast(smt_astt a) override;
 
   smt_astt mk_add(smt_astt a, smt_astt b) override;

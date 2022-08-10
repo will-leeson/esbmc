@@ -15,7 +15,8 @@ public:
     gat(std::string path);
     ~gat();
 
-    std::string predict(std::vector<unsigned int> nodes, 
+    std::vector<std::string> predict(
+                std::vector<unsigned int> nodes, 
                 std::vector<unsigned int> inEdges,
                 std::vector<unsigned int> outEdges, std::vector<unsigned int> edge_attr);
     void load_model(std::string path);

@@ -17,12 +17,15 @@ gat::gat(std::string path){
     }
 }
 
-std::string gat::predict(std::vector<unsigned int> nodes, 
-                 std::vector<unsigned int> inEdges,
-                 std::vector<unsigned int> outEdges,  
-                 std::vector<unsigned int> edge_attr){
+std::vector<std::string> gat::predict(
+                std::vector<unsigned int> nodes, 
+                std::vector<unsigned int> inEdges,
+                std::vector<unsigned int> outEdges,  
+                std::vector<unsigned int> edge_attr){
 
     //Need to declare it as int type to avoid conversion issues
+    c10::InferenceMode guard(true);
+    model.eval();
     auto opts = torch::TensorOptions().dtype(torch::kInt32);
     //Need to convert it to a Float for the model
     auto nodeTensor = torch::zeros({(long)nodes.size(), 67},opts).to(torch::kFloat32);
@@ -31,7 +34,6 @@ std::string gat::predict(std::vector<unsigned int> nodes,
         int j = nodes[i];
         nodeTensor.index_put_({i, j},1);
     }
-    std::cout<<nodeTensor<<std::endl;
 
     auto outEdgeTensor = torch::from_blob(outEdges.data(), (unsigned int)outEdges.size(), opts).to(torch::kI64);
     auto inEdgeTensor = torch::from_blob(inEdges.data(), (unsigned int)inEdges.size(), opts).to(torch::kI64);
@@ -51,11 +53,14 @@ std::string gat::predict(std::vector<unsigned int> nodes,
     inputs.push_back(batch);
 
     auto out = model.forward(inputs).toTensor();
-    int choice = out.argmin().item<int>();
-
+    out = out.argsort();
+    out = out.contiguous().to(torch::kInt32);
     const std::string solvers[] = {"bitwuzla", "boolector", "cvc", "mathsat", "yices", "z3"};
+    std::vector<int> v(out.data_ptr<int>(), out.data_ptr<int>() + out.numel());
 
-    return solvers[choice];
+    std::vector<std::string> outVector = {solvers[v[0]], solvers[v[1]],solvers[v[2]],solvers[v[3]],solvers[v[4]],solvers[v[5]]};
+
+    return outVector;
 }
 
 void gat::load_model(std::string path){

@@ -290,6 +290,11 @@ public:
    *  @return The name of the solver this smt_convt uses. */
   virtual const std::string solver_text() = 0;
 
+  /** Solver name fetcher. Returns a string naming the solver being used.
+   *  This name doesn't include versions and is used by sibyl to determine the solver.
+   *  @return The name of the solver this smt_convt uses. */
+  virtual const std::string raw_solver_text();
+
   /** Fetch the value of a boolean sorted smt_ast. (The 'l' is for literal, and
    *  is historic). Returns a three valued result, of true, false, or
    *  unassigned.

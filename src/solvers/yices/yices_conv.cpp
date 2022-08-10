@@ -99,10 +99,8 @@ void yices_convt::pop_ctx()
 smt_convt::resultt yices_convt::dec_solve()
 {
   pre_solve();
-  msg.status("starting yices");
 
   smt_status_t result = yices_check_context(yices_ctx, nullptr);
-  msg.status("finished yices");
   if(result == STATUS_SAT)
     return smt_convt::P_SATISFIABLE;
 
@@ -1177,7 +1175,6 @@ void yices_smt_ast::dump() const
 void yices_convt::set_interupt(bool val) {
   if(val){
     yices_stop_search(yices_ctx);  
-    yices_exit();
   }
   terminate = val;
 }

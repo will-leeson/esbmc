@@ -2660,6 +2660,11 @@ void smt_convt::dump_smt()
   abort();
 }
 
+const std::string smt_convt::raw_solver_text(){
+  msg.error(fmt::format("SMT dump not implemented for {}", solver_text()));
+  abort();
+}
+
 void smt_convt::print_model()
 {
   msg.error(

@@ -203,6 +203,11 @@ public:
     return ss.str();
   }
 
+  const std::string raw_solver_text() override
+  {
+    return "z3";
+  }
+
   void dump_smt() override;
   void print_model() override;
   void set_interupt(bool val) override;
