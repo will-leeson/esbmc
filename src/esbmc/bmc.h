@@ -50,7 +50,8 @@ public:
   virtual smt_convt::resultt run_parallel_decision_procedure(
     std::shared_ptr<smt_convt> &smt_conv1,
     std::shared_ptr<smt_convt> &smt_conv2,
-    std::shared_ptr<symex_target_equationt> &eq
+    std::shared_ptr<symex_target_equationt> &eq,
+    gat &model
   );
 
 protected:
@@ -93,6 +94,10 @@ protected:
     std::shared_ptr<symex_target_equationt> &eq);
 
   smt_convt::resultt run_thread(std::shared_ptr<symex_target_equationt> &eq, gat &model);
+
+  std::vector<std::string> run_sibyl(std::shared_ptr<symex_target_equationt> &eq, gat &model);
+
+  std::string last_winner = "";
 };
 
 #endif
