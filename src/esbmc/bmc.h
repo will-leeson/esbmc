@@ -30,7 +30,8 @@ public:
     goto_functionst &funcs,
     optionst &opts,
     contextt &_context,
-    const messaget &_message_handler);
+    const messaget &_message_handler,
+    std::string &_last_winner);
 
   bmct(const bmct& rhs);
 
@@ -47,12 +48,25 @@ public:
     std::shared_ptr<smt_convt> &smt_conv,
     std::shared_ptr<symex_target_equationt> &eq);
 
-  virtual smt_convt::resultt run_parallel_decision_procedure(
+  virtual smt_convt::resultt run_top_k_decision_procedure(
     std::shared_ptr<smt_convt> &smt_conv1,
     std::shared_ptr<smt_convt> &smt_conv2,
     std::shared_ptr<symex_target_equationt> &eq,
     gat &model
   );
+
+  virtual smt_convt::resultt run_parallel_last_winner_decision_procedure(
+    std::shared_ptr<smt_convt> &smt_conv1,
+    std::shared_ptr<smt_convt> &smt_conv2,
+    std::shared_ptr<symex_target_equationt> &eq,
+    gat &model
+  );
+
+  virtual void do_cbmc(
+    std::shared_ptr<smt_convt> &smt_conv,
+    std::shared_ptr<symex_target_equationt> &eq);
+  
+  std::vector<std::string> run_sibyl(std::shared_ptr<symex_target_equationt> &eq, gat &model);
 
 protected:
   const contextt &context;
@@ -63,10 +77,6 @@ protected:
   std::shared_ptr<smt_convt> solver1;
   std::shared_ptr<smt_convt> solver2;;
   std::shared_ptr<reachability_treet> symex;
-
-  virtual void do_cbmc(
-    std::shared_ptr<smt_convt> &smt_conv,
-    std::shared_ptr<symex_target_equationt> &eq);
 
   virtual void show_program(std::shared_ptr<symex_target_equationt> &eq);
   virtual void report_success();
@@ -95,9 +105,7 @@ protected:
 
   smt_convt::resultt run_thread(std::shared_ptr<symex_target_equationt> &eq, gat &model);
 
-  std::vector<std::string> run_sibyl(std::shared_ptr<symex_target_equationt> &eq, gat &model);
-
-  std::string last_winner = "";
+  std::string &last_winner;
 };
 
 #endif

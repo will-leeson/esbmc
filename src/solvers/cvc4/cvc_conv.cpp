@@ -1298,7 +1298,7 @@ void cvc_convt::set_interupt(bool val) {
     abort();
   }
 
-  terminate = true;
+  terminate = val;
 }
 
 bool cvc_convt::interupt_finished() {
