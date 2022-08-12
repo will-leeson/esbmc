@@ -21,6 +21,9 @@ public:
                 std::vector<unsigned int> outEdges, std::vector<unsigned int> edge_attr);
     void load_model(std::string path);
     bool is_loaded();
+    void set_terminate(bool val);
+
+    bool terminate=false;
 };
 
 #endif

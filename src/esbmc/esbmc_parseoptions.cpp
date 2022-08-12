@@ -484,8 +484,23 @@ int esbmc_parseoptionst::doit()
   if(cmdline.isset("falsification"))
     return doit_falsification(model, last_winner);
 
-  if(cmdline.isset("k-induction"))
-    return doit_k_induction(model, last_winner);
+  if(cmdline.isset("k-induction")){
+    std::ostringstream str;
+    fine_timet start = current_time();
+    int val = doit_k_induction(model, last_winner);
+    fine_timet stop = current_time();
+    str <<"K-Induction time: ";
+    output_time(stop-start, str);
+    str<< "s";
+    msg.status(str.str());
+    str.str("");
+    
+    str <<"Solve time: ";
+    output_time(solve_time, str);
+    str<< "s";
+    msg.status(str.str());
+    return val;
+  }
 
   if(cmdline.isset("k-induction-parallel"))
     return doit_k_induction_parallel(model, last_winner);
@@ -1293,6 +1308,7 @@ int esbmc_parseoptionst::do_base_case(
 
   case smt_convt::P_SATISFIABLE:
     msg.result(fmt::format("\nBug found (k = {:d})", k_step));
+    solve_time+=bmc.get_solve_time();
     return true;
 
   default:
@@ -1300,6 +1316,7 @@ int esbmc_parseoptionst::do_base_case(
     abort();
   }
 
+  solve_time+=bmc.get_solve_time();
   return false;
 }
 
@@ -1353,6 +1370,7 @@ int esbmc_parseoptionst::do_forward_condition(
       "\nSolution found by the forward condition; "
       "all states are reachable (k = {:d})",
       k_step));
+      solve_time+=bmc.get_solve_time();
     return false;
 
   default:
@@ -1360,6 +1378,7 @@ int esbmc_parseoptionst::do_forward_condition(
     abort();
   }
 
+  solve_time+=bmc.get_solve_time();
   return true;
 }
 
@@ -1409,6 +1428,7 @@ int esbmc_parseoptionst::do_inductive_step(
       "\nSolution found by the inductive step "
       "(k = {:d})",
       k_step));
+    solve_time+=bmc.get_solve_time();
     return false;
 
   default:
@@ -1416,6 +1436,7 @@ int esbmc_parseoptionst::do_inductive_step(
     abort();
   }
 
+  solve_time+=bmc.get_solve_time();
   return true;
 }
 

@@ -207,6 +207,11 @@ public:
   std::vector<unsigned int> edge_attr;
   unsigned int numNodes = 0;
 
+  void set_interupt(bool val) override;
+  bool interupt_finished() override;
+
+  bool terminate = false;
+
   // Flag to workaround the fact that MathSAT does not support fma. It's
   // set to true so every operation is converted using the fpapi
   bool use_fp_api;

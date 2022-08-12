@@ -19,6 +19,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <solvers/sibyl/sibyl_conv.h>
 #include <solvers/solve.h>
 #include <util/options.h>
+#include <util/time_stopping.h>
 #include <iostream>
 #include <prediction/gat.h>
 
@@ -67,6 +68,7 @@ public:
     std::shared_ptr<symex_target_equationt> &eq);
   
   std::vector<std::string> run_sibyl(std::shared_ptr<symex_target_equationt> &eq, gat &model);
+  fine_timet get_solve_time();
 
 protected:
   const contextt &context;
@@ -105,7 +107,9 @@ protected:
 
   smt_convt::resultt run_thread(std::shared_ptr<symex_target_equationt> &eq, gat &model);
 
+
   std::string &last_winner;
+  fine_timet solve_time = 0;
 };
 
 #endif

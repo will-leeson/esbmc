@@ -92,6 +92,8 @@ protected:
   FILE *out = stdout;
   FILE *err = stderr;
 
+  fine_timet solve_time=0;
+
 private:
   void close_file(FILE *f)
   {

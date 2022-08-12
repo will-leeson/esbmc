@@ -256,6 +256,7 @@ void * call_solve(void *tdata){
   data->result = data->smt_conv->dec_solve();
   data->done = true;
 
+  pthread_cond_signal(&predict_condition);
   pthread_cond_signal(&solve_condition);
 
   pthread_exit(NULL);
@@ -330,19 +331,9 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
 
   pthread_cond_wait(&predict_condition, &mutex);
 
-  std::string choice;
-  if(p.choices[0] != last_winner && p.choices[0] != "mathsat"){
-    choice = p.choices[0];
-  }
-  else if(p.choices[1] != last_winner && p.choices[1] != "mathsat"){
-    choice = p.choices[1];
-  }
-  else{
-    choice = p.choices[2];
-  }
-
   if(d1.done){
     msg.status("Solver finished before prediction solver started");
+    model.set_terminate(true);
     last_winner = smt_conv1->raw_solver_text();
     runtime_solver = smt_conv1;
     eq = eq1;
@@ -353,6 +344,16 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
     (void) pthread_join(tid2, NULL);
   }
   else{
+    std::string choice;
+    if(p.choices[0] != last_winner && p.choices[0] != "mathsat"){
+      choice = p.choices[0];
+    }
+    else if(p.choices[1] != last_winner && p.choices[1] != "mathsat"){
+      choice = p.choices[1];
+    }
+    else{
+      choice = p.choices[2];
+    }
     msg.status("Building choosen solver: "+ choice);
     smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
     msg.status("Solver Built");
@@ -1026,6 +1027,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
 
     if(options.get_bool_option("parallel-solve")){
       std::string strategy = options.get_option("parallel-strategy");
+      fine_timet start = current_time();
       if(strategy == "last-winner"){
         res = run_parallel_last_winner_decision_procedure(solver1, solver2, eq, model);
       }
@@ -1039,6 +1041,8 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
         msg.error(strategy + " is not a viable choice. Options include last-winner, constant, or top-k");
         abort();
       }
+      fine_timet end = current_time();
+      solve_time = solve_time + (end-start);
     }
     else{
       if(options.get_bool_option("predict-only")){
@@ -1068,4 +1072,8 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
     msg.error("Out of memory\n");
     return smt_convt::P_ERROR;
   }
+}
+
+fine_timet bmct::get_solve_time(){
+  return solve_time;
 }
