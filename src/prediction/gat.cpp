@@ -29,7 +29,7 @@ std::vector<std::string> gat::predict(
 
     std::vector<std::string> solvers = {"bitwuzla", "boolector", "cvc", "mathsat", "yices", "z3"};
     if(terminate){
-        std::cout<< "Terminated before any tensor creation"<<std::endl;
+        // std::cout<< "Terminated before any tensor creation"<<std::endl;
         return solvers;
     }
 
@@ -41,7 +41,7 @@ std::vector<std::string> gat::predict(
         int j = nodes[i];
         nodeTensor.index_put_({i, j},1);
         if(terminate){
-            std::cout<< "Terminated during node tensor creation"<<std::endl;
+            // std::cout<< "Terminated during node tensor creation"<<std::endl;
             return solvers;
         }
     }
@@ -53,7 +53,7 @@ std::vector<std::string> gat::predict(
 
     auto edge_attrTensor = torch::from_blob(edge_attr.data(), edge_attr.size(), opts).to(torch::kFloat32);
     if(terminate){
-        std::cout<< "Terminated after tensor creation"<<std::endl;
+        // std::cout<< "Terminated after tensor creation"<<std::endl;
         return solvers;
     }
 
@@ -68,13 +68,13 @@ std::vector<std::string> gat::predict(
     inputs.push_back(problemType);
     inputs.push_back(batch);
     if(terminate){
-        std::cout<< "Terminated after tensor stacking"<<std::endl;
+        // std::cout<< "Terminated after tensor stacking"<<std::endl;
         return solvers;
     }
 
     auto out = model.forward(inputs).toTensor();
     if(terminate){
-        std::cout<< "Terminated after forward call"<<std::endl;
+        // std::cout<< "Terminated after forward call"<<std::endl;
         return solvers;
     }
     out = out.argsort();
@@ -83,7 +83,7 @@ std::vector<std::string> gat::predict(
 
     std::vector<std::string> outVector = {solvers[v[0]], solvers[v[1]],solvers[v[2]],solvers[v[3]],solvers[v[4]],solvers[v[5]]};
 
-    std::cout<< "Made it through full call"<<std::endl;
+    // std::cout<< "Made it through full call"<<std::endl;
     return outVector;
 }
 

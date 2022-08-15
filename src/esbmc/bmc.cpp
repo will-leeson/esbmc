@@ -295,7 +295,6 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
   gat &model
 )
 {
-  msg.status("Beginning decision procedure");
   smt_convt::resultt dec_result;
 
   auto eq1 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
@@ -311,7 +310,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
     .bmc = &temp1,
     .smt_conv=smt_conv1,
     .eq = eq1,
-    .result=smt_convt::resultt::P_SMTLIB,
+    .result=smt_convt::resultt::P_ERROR,
     .done=false 
   };
   predict_data p = {
@@ -325,6 +324,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
 
   msg.status("Starting threads");
   smt_conv1->set_interupt(false);
+  model.set_terminate(false);
 
   (void) pthread_create(&tid1, NULL, call_solve, (void *)&d1);
   (void) pthread_create(&tid2, NULL, call_predict, (void *)&p);
@@ -332,14 +332,14 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
   pthread_cond_wait(&predict_condition, &mutex);
 
   if(d1.done){
-    msg.status("Solver finished before prediction solver started");
+    msg.debug("Solver finished before prediction solver started");
     model.set_terminate(true);
     last_winner = smt_conv1->raw_solver_text();
     runtime_solver = smt_conv1;
     eq = eq1;
     dec_result = d1.result;
 
-    msg.debug("JOINING THREADS");
+    msg.status("JOINING THREADS");
     (void) pthread_join(tid1, NULL);
     (void) pthread_join(tid2, NULL);
   }
@@ -354,9 +354,9 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
     else{
       choice = p.choices[2];
     }
-    msg.status("Building choosen solver: "+ choice);
+    msg.debug("Building choosen solver: "+ choice);
     smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
-    msg.status("Solver Built");
+    msg.debug("Solver Built");
     smt_conv2->set_interupt(false);
     auto eq3 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
     bmct temp3 = bmct(*this);
@@ -364,7 +364,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
       .bmc = &temp3,
       .smt_conv=smt_conv2,
       .eq = eq3,
-      .result=smt_convt::resultt::P_SMTLIB,
+      .result=smt_convt::resultt::P_ERROR,
       .done=false 
     };
     (void) pthread_create(&tid3, NULL, call_solve, (void *)&d2);
@@ -372,7 +372,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
     pthread_cond_wait(&solve_condition, &mutex);
     
     if(d1.done){
-      msg.status("Solver " + smt_conv1->solver_text()+ " has finished");
+      msg.debug("Solver " + smt_conv1->solver_text()+ " has finished");
       smt_conv2->set_interupt(true);
       msg.debug("Killing solver " + smt_conv2->solver_text());
       while(!smt_conv2->interupt_finished()){}
@@ -383,7 +383,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
       dec_result = d1.result;
     }
     else if(d2.done){
-      msg.status("Solver " + smt_conv2->solver_text()+ " has finished");
+      msg.debug("Solver " + smt_conv2->solver_text()+ " has finished");
       smt_conv1->set_interupt(true);
       msg.debug("Killing solver: " + smt_conv1->solver_text());
       while(!smt_conv1->interupt_finished()){}
@@ -403,6 +403,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
     smt_conv1->set_interupt(false);
     smt_conv2->set_interupt(false);
   }
+  model.set_terminate(false);
 
   return dec_result;
 }
