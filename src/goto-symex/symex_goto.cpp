@@ -453,7 +453,7 @@ bool goto_symext::get_unwind(
     this_loop_max_unwind != 0 && unwind >= this_loop_max_unwind;
   if(!options.get_bool_option("quiet"))
   {
-    msg.status(fmt::format(
+    msg.debug(fmt::format(
       stop_unwind ? "Not unwinding "
                   : "Unwinding "
                     "loop {} {} {} {} {}",

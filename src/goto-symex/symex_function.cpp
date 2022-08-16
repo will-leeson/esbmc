@@ -53,7 +53,7 @@ bool goto_symext::get_unwind_recursion(
     if(this_loop_max_unwind != 0)
       msg += " (" + integer2string(this_loop_max_unwind) + " max)";
 
-    this->msg.status(msg);
+    this->msg.debug(msg);
   }
 
   return this_loop_max_unwind != 0 && unwind >= this_loop_max_unwind;
