@@ -20,6 +20,10 @@ public:
 
   smt_convt::resultt dec_solve() override;
   const std::string solver_text() override;
+  const std::string raw_solver_text() override
+  {
+    return "cvc";
+  }
 
   bool get_bool(smt_astt a) override;
   BigInt get_bv(smt_astt a, bool is_signed) override;
@@ -152,7 +156,12 @@ public:
 
   void dump_smt() override;
 
+  void set_interupt(bool val) override;
+  bool interupt_finished() override;
+
   unsigned int to_bv_counter;
+
+  bool terminate = false;
 
   CVC4::ExprManager em;
   CVC4::SmtEngine smt;

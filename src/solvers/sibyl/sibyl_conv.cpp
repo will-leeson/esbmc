@@ -577,6 +577,13 @@ void sibyl_convt::dump_smt()
     msg.status("Edge Attr: " + attrStream.str());
 }
 
+void sibyl_convt::set_interupt(bool val){
+    terminate = val;
+}
+bool sibyl_convt::interupt_finished(){
+    return terminate;
+}
+
 void sibyl_convt::print_model()
 {
   msg.error("Sibyl doesn't support model printing");

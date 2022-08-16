@@ -19,6 +19,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <solvers/sibyl/sibyl_conv.h>
 #include <solvers/solve.h>
 #include <util/options.h>
+#include <util/time_stopping.h>
 #include <iostream>
 #include <prediction/gat.h>
 
@@ -30,7 +31,10 @@ public:
     goto_functionst &funcs,
     optionst &opts,
     contextt &_context,
-    const messaget &_message_handler);
+    const messaget &_message_handler,
+    std::string &_last_winner);
+
+  bmct(const bmct& rhs);
 
   optionst &options;
 
@@ -41,6 +45,30 @@ public:
   virtual smt_convt::resultt start_bmc(gat &model);
   virtual smt_convt::resultt run(std::shared_ptr<symex_target_equationt> &eq, gat &model);
   virtual ~bmct() = default;
+  virtual smt_convt::resultt run_decision_procedure(
+    std::shared_ptr<smt_convt> &smt_conv,
+    std::shared_ptr<symex_target_equationt> &eq);
+
+  virtual smt_convt::resultt run_top_k_decision_procedure(
+    std::shared_ptr<smt_convt> &smt_conv1,
+    std::shared_ptr<smt_convt> &smt_conv2,
+    std::shared_ptr<symex_target_equationt> &eq,
+    gat &model
+  );
+
+  virtual smt_convt::resultt run_parallel_last_winner_decision_procedure(
+    std::shared_ptr<smt_convt> &smt_conv1,
+    std::shared_ptr<smt_convt> &smt_conv2,
+    std::shared_ptr<symex_target_equationt> &eq,
+    gat &model
+  );
+
+  virtual void do_cbmc(
+    std::shared_ptr<smt_convt> &smt_conv,
+    std::shared_ptr<symex_target_equationt> &eq);
+  
+  std::vector<std::string> run_sibyl(std::shared_ptr<symex_target_equationt> &eq, gat &model);
+  fine_timet get_solve_time();
 
 protected:
   const contextt &context;
@@ -48,14 +76,9 @@ protected:
   const messaget &msg;
   std::shared_ptr<smt_convt> prediction_solver;
   std::shared_ptr<smt_convt> runtime_solver;
+  std::shared_ptr<smt_convt> solver1;
+  std::shared_ptr<smt_convt> solver2;;
   std::shared_ptr<reachability_treet> symex;
-  virtual smt_convt::resultt run_decision_procedure(
-    std::shared_ptr<smt_convt> &smt_conv,
-    std::shared_ptr<symex_target_equationt> &eq);
-
-  virtual void do_cbmc(
-    std::shared_ptr<smt_convt> &smt_conv,
-    std::shared_ptr<symex_target_equationt> &eq);
 
   virtual void show_program(std::shared_ptr<symex_target_equationt> &eq);
   virtual void report_success();
@@ -83,6 +106,10 @@ protected:
     std::shared_ptr<symex_target_equationt> &eq);
 
   smt_convt::resultt run_thread(std::shared_ptr<symex_target_equationt> &eq, gat &model);
+
+
+  std::string &last_winner;
+  fine_timet solve_time = 0;
 };
 
 #endif

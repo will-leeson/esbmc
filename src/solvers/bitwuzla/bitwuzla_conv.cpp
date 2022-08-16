@@ -1,6 +1,7 @@
 #include <bitwuzla_conv.h>
 #include <cstring>
 #include <util/message/format.h>
+#include <iostream>
 
 #define new_ast new_solver_ast<bitw_smt_ast>
 
@@ -8,6 +9,16 @@ void bitwuzla_error_handler(const char *msg)
 {
   assert(0 && fmt::format("Bitwuzla error encountered\n{}", msg).c_str());
   abort();
+}
+
+int32_t bitwuzla_termination_handler(void *terminate){
+  bool *t = (bool *)terminate;
+  if(*t){
+    return 1;
+  }
+  else{
+    return 0;
+  }
 }
 
 smt_convt *create_new_bitwuzla_solver(
@@ -33,6 +44,7 @@ bitwuzla_convt::bitwuzla_convt(
   bitw = bitwuzla_new();
   bitwuzla_set_option(bitw, BITWUZLA_OPT_PRODUCE_MODELS, 1);
   bitwuzla_set_abort_callback(bitwuzla_error_handler);
+  bitwuzla_set_termination_callback(bitw, bitwuzla_termination_handler, (void *)&terminate);
   if(options.get_bool_option("smt-during-symex"))
     bitwuzla_set_option(bitw, BITWUZLA_OPT_INCREMENTAL, 1);
 }
@@ -825,6 +837,14 @@ void bitw_smt_ast::dump() const
   auto f = msg.get_temp_file();
   bitwuzla_term_dump(a, "smt2", f.file());
   msg.insert_file_contents(VerbosityLevel::Debug, f.file());
+}
+
+void bitwuzla_convt::set_interupt(bool val){
+  terminate = val;
+}
+
+bool bitwuzla_convt::interupt_finished(){
+  return bitwuzla_terminate(bitw);
 }
 
 void bitwuzla_convt::print_model()

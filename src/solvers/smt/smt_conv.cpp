@@ -2660,10 +2660,27 @@ void smt_convt::dump_smt()
   abort();
 }
 
+const std::string smt_convt::raw_solver_text(){
+  msg.error(fmt::format("SMT dump not implemented for {}", solver_text()));
+  abort();
+}
+
 void smt_convt::print_model()
 {
   msg.error(
     fmt::format("SMT model printing not implemented for {}", solver_text()));
+  abort();
+}
+
+void smt_convt::set_interupt(bool val){
+  msg.error(
+    fmt::format("SMT interuption not implemented for {}", solver_text()));
+  abort();
+}
+
+bool smt_convt::interupt_finished(){
+  msg.error(
+    fmt::format("SMT interuption not implemented for {}", solver_text()));
   abort();
 }
 

@@ -48,30 +48,33 @@ protected:
   virtual bool
   process_goto_program(optionst &options, goto_functionst &goto_functions);
 
-  int doit_k_induction(gat model);
-  int doit_k_induction_parallel(gat model);
+  int doit_k_induction(gat model, std::string *last_winner);
+  int doit_k_induction_parallel(gat model, std::string *last_winner);
 
-  int doit_falsification(gat model);
-  int doit_incremental(gat model);
-  int doit_termination(gat model);
+  int doit_falsification(gat model, std::string *last_winner);
+  int doit_incremental(gat model, std::string *last_winner);
+  int doit_termination(gat model, std::string *last_winner);
 
   int do_base_case(
     optionst &opts,
     goto_functionst &goto_functions,
     const BigInt &k_step,
-    gat &model);
+    gat &model,
+    std::string *last_winner);
 
   int do_forward_condition(
     optionst &opts,
     goto_functionst &goto_functions,
     const BigInt &k_step,
-    gat &model);
+    gat &model,
+    std::string *last_winner);
 
   int do_inductive_step(
     optionst &opts,
     goto_functionst &goto_functions,
     const BigInt &k_step,
-    gat &model);
+    gat &model,
+    std::string *last_winner);
 
   bool read_goto_binary(goto_functionst &goto_functions);
 
@@ -88,6 +91,8 @@ protected:
 
   FILE *out = stdout;
   FILE *err = stderr;
+
+  fine_timet solve_time=0;
 
 private:
   void close_file(FILE *f)

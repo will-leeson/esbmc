@@ -1102,6 +1102,7 @@ public:
   int lt(const base2t &ref) const override;
   size_t do_crc() const override;
   void hash(crypto_hash &hash) const override;
+  pthread_mutex_t crc_mutex;
 
 protected:
   // Fetch the type information about the field we are concerned with out

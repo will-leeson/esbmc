@@ -203,11 +203,19 @@ public:
     return ss.str();
   }
 
+  const std::string raw_solver_text() override
+  {
+    return "z3";
+  }
+
   void dump_smt() override;
   void print_model() override;
+  void set_interupt(bool val) override;
+  bool interupt_finished() override;
 
 private:
   void print_smt_formulae(std::ostream &dest);
+  bool terminate = false;
 
 public:
   //  Must be first member; that way it's the last to be destroyed.

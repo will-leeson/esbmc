@@ -458,6 +458,8 @@ int esbmc_parseoptionst::doit()
   }
 
   gat model;
+  std::string last_winner_value = "";
+  std::string *last_winner = &last_winner_value;
 
   if(cmdline.isset("sibyl")){
     msg.status(cmdline.getval("sibyl-model"));
@@ -474,19 +476,34 @@ int esbmc_parseoptionst::doit()
   }
 
   if(cmdline.isset("termination"))
-    return doit_termination(model);
+    return doit_termination(model, last_winner);
 
   if(cmdline.isset("incremental-bmc"))
-    return doit_incremental(model);
+    return doit_incremental(model, last_winner);
 
   if(cmdline.isset("falsification"))
-    return doit_falsification(model);
+    return doit_falsification(model, last_winner);
 
-  if(cmdline.isset("k-induction"))
-    return doit_k_induction(model);
+  if(cmdline.isset("k-induction")){
+    std::ostringstream str;
+    fine_timet start = current_time();
+    int val = doit_k_induction(model, last_winner);
+    fine_timet stop = current_time();
+    str <<"K-Induction time: ";
+    output_time(stop-start, str);
+    str<< "s";
+    msg.status(str.str());
+    str.str("");
+    
+    str <<"Solve time: ";
+    output_time(solve_time, str);
+    str<< "s";
+    msg.status(str.str());
+    return val;
+  }
 
   if(cmdline.isset("k-induction-parallel"))
-    return doit_k_induction_parallel(model);
+    return doit_k_induction_parallel(model, last_winner);
 
   optionst opts;
   get_command_line_options(opts);
@@ -508,7 +525,7 @@ int esbmc_parseoptionst::doit()
     return 0;
 
   // do actual BMC
-  bmct bmc(goto_functions, opts, context, msg);
+  bmct bmc(goto_functions, opts, context, msg, *last_winner);
   if(!model.is_loaded() && opts.get_bool_option("sibyl")){
     msg.error("Model is not loaded");
     abort();
@@ -517,7 +534,7 @@ int esbmc_parseoptionst::doit()
   return do_bmc(bmc, model);
 }
 
-int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
+int esbmc_parseoptionst::doit_k_induction_parallel(gat model, std::string *last_winner)
 {
 #ifdef _WIN32
   msg.error("Windows does not support parallel kind");
@@ -852,14 +869,14 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
     // 2. It couldn't find a bug
     for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
     {
-      bmct bmc(goto_functions, opts, context, msg);
+      bmct bmc(goto_functions, opts, context, msg, *last_winner);
       if(!model.is_loaded() && opts.get_bool_option("sibyl")){
         msg.error("Model is not loaded");
         abort();
       }
       bmc.options.set_option("unwind", integer2string(k_step));
 
-      msg.status(fmt::format("*** Checking base case, k = {:d}\n", k_step));
+      msg.debug(fmt::format("*** Checking base case, k = {:d}\n", k_step));
 
       // If an exception was thrown, we should abort the process
       int res = smt_convt::P_ERROR;
@@ -961,14 +978,14 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
     // 2. It couldn't find a proof
     for(BigInt k_step = 2; k_step <= max_k_step; k_step += k_step_inc)
     {
-      bmct bmc(goto_functions, opts, context, msg);
+      bmct bmc(goto_functions, opts, context, msg, *last_winner);
       if(!model.is_loaded() && opts.get_bool_option("sibyl")){
         msg.error("Model is not loaded");
         abort();
       }
       bmc.options.set_option("unwind", integer2string(k_step));
 
-      msg.status(
+      msg.debug(
         fmt::format("*** Checking forward condition, k = {:d}", k_step));
 
       // If an exception was thrown, we should abort the process
@@ -1033,7 +1050,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
     // 2. It couldn't find a proof
     for(BigInt k_step = 2; k_step <= max_k_step; k_step += k_step_inc)
     {
-      bmct bmc(goto_functions, opts, context, msg);
+      bmct bmc(goto_functions, opts, context, msg, *last_winner);
       if(!model.is_loaded() && opts.get_bool_option("sibyl")){
         msg.error("Model is not loaded");
         abort();
@@ -1041,7 +1058,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
 
       bmc.options.set_option("unwind", integer2string(k_step));
 
-      msg.status(fmt::format("*** Checking inductive step, k = {:d}", k_step));
+      msg.debug(fmt::format("*** Checking inductive step, k = {:d}", k_step));
 
       // If an exception was thrown, we should abort the process
       int res = smt_convt::P_ERROR;
@@ -1092,7 +1109,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model)
   return 0;
 }
 
-int esbmc_parseoptionst::doit_k_induction(gat model)
+int esbmc_parseoptionst::doit_k_induction(gat model,std::string *last_winner)
 {
   optionst opts;
   get_command_line_options(opts);
@@ -1120,13 +1137,13 @@ int esbmc_parseoptionst::doit_k_induction(gat model)
 
   for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
   {
-    if(do_base_case(opts, goto_functions, k_step, model))
+    if(do_base_case(opts, goto_functions, k_step, model, last_winner))
       return true;
 
-    if(!do_forward_condition(opts, goto_functions, k_step, model))
+    if(!do_forward_condition(opts, goto_functions, k_step, model, last_winner))
       return false;
 
-    if(!do_inductive_step(opts, goto_functions, k_step, model))
+    if(!do_inductive_step(opts, goto_functions, k_step, model, last_winner))
       return false;
   }
 
@@ -1136,7 +1153,7 @@ int esbmc_parseoptionst::doit_k_induction(gat model)
   return 0;
 }
 
-int esbmc_parseoptionst::doit_falsification(gat model)
+int esbmc_parseoptionst::doit_falsification(gat model, std::string *last_winner)
 {
   optionst opts;
   get_command_line_options(opts);
@@ -1164,7 +1181,7 @@ int esbmc_parseoptionst::doit_falsification(gat model)
 
   for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
   {
-    if(do_base_case(opts, goto_functions, k_step, model))
+    if(do_base_case(opts, goto_functions, k_step, model, last_winner))
       return true;
   }
 
@@ -1174,7 +1191,7 @@ int esbmc_parseoptionst::doit_falsification(gat model)
   return 0;
 }
 
-int esbmc_parseoptionst::doit_incremental(gat model)
+int esbmc_parseoptionst::doit_incremental(gat model, std::string *last_winner)
 {
   optionst opts;
   get_command_line_options(opts);
@@ -1203,10 +1220,10 @@ int esbmc_parseoptionst::doit_incremental(gat model)
 
   for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
   {
-    if(do_base_case(opts, goto_functions, k_step, model))
+    if(do_base_case(opts, goto_functions, k_step, model, last_winner))
       return true;
 
-    if(!do_forward_condition(opts, goto_functions, k_step, model))
+    if(!do_forward_condition(opts, goto_functions, k_step, model, last_winner))
       return false;
   }
 
@@ -1216,7 +1233,7 @@ int esbmc_parseoptionst::doit_incremental(gat model)
   return 0;
 }
 
-int esbmc_parseoptionst::doit_termination(gat model)
+int esbmc_parseoptionst::doit_termination(gat model,std::string *last_winner)
 {
   optionst opts;
   get_command_line_options(opts);
@@ -1244,7 +1261,7 @@ int esbmc_parseoptionst::doit_termination(gat model)
 
   for(BigInt k_step = 1; k_step <= max_k_step; k_step += k_step_inc)
   {
-    if(!do_forward_condition(opts, goto_functions, k_step, model))
+    if(!do_forward_condition(opts, goto_functions, k_step, model, last_winner))
       return false;
 
     /* Disable this for now as it is causing more than 100 errors on SV-COMP
@@ -1263,7 +1280,8 @@ int esbmc_parseoptionst::do_base_case(
   optionst &opts,
   goto_functionst &goto_functions,
   const BigInt &k_step,
-  gat &model)
+  gat &model,
+  std::string *last_winner)
 {
   opts.set_option("base-case", true);
   opts.set_option("forward-condition", false);
@@ -1272,7 +1290,7 @@ int esbmc_parseoptionst::do_base_case(
   opts.set_option("no-unwinding-assertions", true);
   opts.set_option("partial-loops", false);
 
-  bmct bmc(goto_functions, opts, context, msg);
+  bmct bmc(goto_functions, opts, context, msg, *last_winner);
   if(!model.is_loaded() && opts.get_bool_option("sibyl")){
     msg.error("Model is not loaded");
     abort();
@@ -1280,7 +1298,7 @@ int esbmc_parseoptionst::do_base_case(
 
   bmc.options.set_option("unwind", integer2string(k_step));
 
-  msg.status(fmt::format("*** Checking base case, k = {:d}", k_step));
+  msg.debug(fmt::format("*** Checking base case, k = {:d}", k_step));
   switch(do_bmc(bmc, model))
   {
   case smt_convt::P_UNSATISFIABLE:
@@ -1290,6 +1308,7 @@ int esbmc_parseoptionst::do_base_case(
 
   case smt_convt::P_SATISFIABLE:
     msg.result(fmt::format("\nBug found (k = {:d})", k_step));
+    solve_time+=bmc.get_solve_time();
     return true;
 
   default:
@@ -1297,6 +1316,7 @@ int esbmc_parseoptionst::do_base_case(
     abort();
   }
 
+  solve_time+=bmc.get_solve_time();
   return false;
 }
 
@@ -1304,7 +1324,8 @@ int esbmc_parseoptionst::do_forward_condition(
   optionst &opts,
   goto_functionst &goto_functions,
   const BigInt &k_step,
-  gat &model)
+  gat &model,
+  std::string *last_winner)
 {
   if(opts.get_bool_option("disable-forward-condition"))
     return true;
@@ -1323,7 +1344,7 @@ int esbmc_parseoptionst::do_forward_condition(
   // Turn assertions off
   opts.set_option("no-assertions", true);
 
-  bmct bmc(goto_functions, opts, context, msg);
+  bmct bmc(goto_functions, opts, context, msg, *last_winner);
   if(!model.is_loaded() && opts.get_bool_option("sibyl")){
     msg.error("Model is not loaded");
     abort();
@@ -1332,12 +1353,11 @@ int esbmc_parseoptionst::do_forward_condition(
 
   bmc.options.set_option("unwind", integer2string(k_step));
 
-  msg.status(fmt::format("*** Checking forward condition, k = {:d}", k_step));
+  msg.debug(fmt::format("*** Checking forward condition, k = {:d}", k_step));
   auto res = do_bmc(bmc, model);
 
   // Restore the no assertion flag, before checking the other steps
   opts.set_option("no-assertions", no_assertions);
-
   switch(res)
   {
   case smt_convt::P_SATISFIABLE:
@@ -1350,6 +1370,7 @@ int esbmc_parseoptionst::do_forward_condition(
       "\nSolution found by the forward condition; "
       "all states are reachable (k = {:d})",
       k_step));
+      solve_time+=bmc.get_solve_time();
     return false;
 
   default:
@@ -1357,6 +1378,7 @@ int esbmc_parseoptionst::do_forward_condition(
     abort();
   }
 
+  solve_time+=bmc.get_solve_time();
   return true;
 }
 
@@ -1364,7 +1386,8 @@ int esbmc_parseoptionst::do_inductive_step(
   optionst &opts,
   goto_functionst &goto_functions,
   const BigInt &k_step,
-  gat &model)
+  gat &model,
+  std::string *last_winner)
 {
   // Don't run inductive step for k_step == 1
   if(k_step == 1)
@@ -1385,14 +1408,14 @@ int esbmc_parseoptionst::do_inductive_step(
   opts.set_option("no-unwinding-assertions", true);
   opts.set_option("partial-loops", true);
 
-  bmct bmc(goto_functions, opts, context, msg);
+  bmct bmc(goto_functions, opts, context, msg, *last_winner);
   if(!model.is_loaded() && opts.get_bool_option("sibyl")){
     msg.error("Model is not loaded");
     abort();
   }
   bmc.options.set_option("unwind", integer2string(k_step));
 
-  msg.status(fmt::format("*** Checking inductive step, k = {:d}", k_step));
+  msg.debug(fmt::format("*** Checking inductive step, k = {:d}", k_step));
   switch(do_bmc(bmc, model))
   {
   case smt_convt::P_SATISFIABLE:
@@ -1405,6 +1428,7 @@ int esbmc_parseoptionst::do_inductive_step(
       "\nSolution found by the inductive step "
       "(k = {:d})",
       k_step));
+    solve_time+=bmc.get_solve_time();
     return false;
 
   default:
@@ -1412,6 +1436,7 @@ int esbmc_parseoptionst::do_inductive_step(
     abort();
   }
 
+  solve_time+=bmc.get_solve_time();
   return true;
 }
 

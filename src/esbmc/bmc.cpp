@@ -43,15 +43,41 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <util/show_symbol_table.h>
 #include <util/time_stopping.h>
 #include <prediction/gat.h>
+#include <pthread.h>
 
 #include <iostream>
+#include <future>
+
+pthread_cond_t solve_condition;
+pthread_cond_t predict_condition;
+pthread_mutex_t mutex;
+
+struct thread_data
+{
+  bmct *bmc;
+  std::shared_ptr<smt_convt> smt_conv;
+  std::shared_ptr<symex_target_equationt> &eq;
+  smt_convt::resultt result;
+  bool done;
+};
+
+struct predict_data
+{
+  bmct *bmc;
+  std::shared_ptr<smt_convt> smt_conv;
+  std::shared_ptr<symex_target_equationt> &eq;
+  gat &model;
+  std::vector<std::string> choices;
+  bool done;
+};
 
 bmct::bmct(
   goto_functionst &funcs,
   optionst &opts,
   contextt &_context,
-  const messaget &_message_handler)
-  : options(opts), context(_context), ns(context), msg(_message_handler)
+  const messaget &_message_handler,
+  std::string &_last_winner)
+  : options(opts), context(_context), ns(context), msg(_message_handler), last_winner(_last_winner)
 {
   interleaving_number = 0;
   interleaving_failed = 0;
@@ -84,10 +110,29 @@ bmct::bmct(
   }
 }
 
+bmct::bmct(const bmct& rhs): options(rhs.options), context(rhs.context), ns(context), msg(rhs.msg), last_winner(rhs.last_winner){
+  interleaving_number = 0;
+  interleaving_failed = 0;
+  use_sibyl = options.get_bool_option("sibyl");
+
+  if(options.get_bool_option("smt-during-symex"))
+  {
+    runtime_solver =
+      std::shared_ptr<smt_convt>(create_solver_factory("", ns, options, msg));
+
+    symex = rhs.symex;
+  }
+  else
+  {
+    symex = rhs.symex;
+  }
+}
+
 void bmct::do_cbmc(
   std::shared_ptr<smt_convt> &smt_conv,
   std::shared_ptr<symex_target_equationt> &eq)
 {
+  msg.status("Converting for " + smt_conv->solver_text());
   eq->convert(*smt_conv.get());
 }
 
@@ -156,7 +201,7 @@ smt_convt::resultt bmct::run_decision_procedure(
   else
     logic = "integer/real arithmetic";
 
-  msg.status(fmt::format("Encoding remaining VCC(s) using {}", logic));
+  msg.debug(fmt::format("Encoding remaining VCC(s) using {}", logic));
 
   fine_timet encode_start = current_time();
   do_cbmc(smt_conv, eq);
@@ -166,7 +211,7 @@ smt_convt::resultt bmct::run_decision_procedure(
   str << "Encoding to solver time: ";
   output_time(encode_stop - encode_start, str);
   str << "s";
-  msg.status(str.str());
+  msg.debug(str.str());
 
   if(
     options.get_bool_option("smt-formula-too") ||
@@ -191,6 +236,271 @@ smt_convt::resultt bmct::run_decision_procedure(
   output_time(sat_stop - sat_start, str);
   str << "s";
   msg.status(str.str());
+
+  return dec_result;
+}
+
+void * call_solve(void *tdata){
+  thread_data * data = (thread_data *)tdata;
+
+  fine_timet encode_start = current_time();
+  data->bmc->do_cbmc(data->smt_conv, data->eq);
+  fine_timet encode_stop = current_time();
+  std::ostringstream str;
+  str << "Encoding to solvertime: ";
+  output_time(encode_stop - encode_start, str);
+  str << "s";
+
+  std::cout<<str.str()<<std::endl;
+
+  data->result = data->smt_conv->dec_solve();
+  data->done = true;
+
+  pthread_cond_signal(&predict_condition);
+  pthread_cond_signal(&solve_condition);
+
+  pthread_exit(NULL);
+}
+
+void * call_predict(void *pdata){
+  predict_data * data = (predict_data *)pdata;
+
+  std::cout<<"Building Graph"<<std::endl;
+  data->bmc->do_cbmc(data->smt_conv, data->eq);
+  std::cout<<"Built Graph"<<std::endl;
+
+  sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(data->smt_conv.get());
+
+  if (data->model.is_loaded()){
+    std::cout<<"Predicting"<<std::endl;
+    data->choices = data->model.predict(sibyl_solver->nodes, sibyl_solver->inEdges, sibyl_solver->outEdges, sibyl_solver->edge_attr);
+    std::cout<<"Predicted"<<std::endl;
+  }
+  else{
+    std::cout<<("Model is not loaded")<<std::endl;
+    abort();
+  }
+
+  std::cout<<"Leaving prediction function"<<std::endl;
+  data->done = true;
+  pthread_cond_signal(&predict_condition);
+
+  pthread_exit(NULL);
+}
+
+smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
+  std::shared_ptr<smt_convt> &smt_conv1,
+  std::shared_ptr<smt_convt> &smt_conv2,
+  std::shared_ptr<symex_target_equationt> &eq,
+  gat &model
+)
+{
+  smt_convt::resultt dec_result;
+
+  auto eq1 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
+  auto eq2 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
+
+  smt_conv1 = std::shared_ptr<smt_convt>(create_solver_factory(last_winner, ns, options, msg));
+  prediction_solver = std::shared_ptr<smt_convt>(create_solver_factory("sibyl", ns, options, msg));
+
+  pthread_t tid1, tid2, tid3;
+  bmct temp1 = bmct(*this);
+  bmct temp2 = bmct(*this);
+  thread_data d1 = {
+    .bmc = &temp1,
+    .smt_conv=smt_conv1,
+    .eq = eq1,
+    .result=smt_convt::resultt::P_ERROR,
+    .done=false 
+  };
+  predict_data p = {
+    .bmc = &temp2,
+    .smt_conv = prediction_solver,
+    .eq = eq2,
+    .model= model,
+    .choices = {},
+    .done = false
+  };
+
+  msg.debug("Starting threads");
+  smt_conv1->set_interupt(false);
+  model.set_terminate(false);
+
+  (void) pthread_create(&tid1, NULL, call_solve, (void *)&d1);
+  (void) pthread_create(&tid2, NULL, call_predict, (void *)&p);
+
+  pthread_cond_wait(&predict_condition, &mutex);
+
+  if(d1.done){
+    msg.debug("Solver finished before prediction solver started");
+    model.set_terminate(true);
+    last_winner = smt_conv1->raw_solver_text();
+    runtime_solver = smt_conv1;
+    eq = eq1;
+    dec_result = d1.result;
+
+    msg.debug("JOINING THREADS");
+    (void) pthread_join(tid1, NULL);
+    (void) pthread_join(tid2, NULL);
+  }
+  else{
+    std::string choice;
+    if(p.choices[0] != last_winner && p.choices[0] != "mathsat"){
+      choice = p.choices[0];
+    }
+    else if(p.choices[1] != last_winner && p.choices[1] != "mathsat"){
+      choice = p.choices[1];
+    }
+    else{
+      choice = p.choices[2];
+    }
+    msg.debug("Building choosen solver: "+ choice);
+    smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
+    msg.debug("Solver Built");
+    smt_conv2->set_interupt(false);
+    auto eq3 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
+    bmct temp3 = bmct(*this);
+    thread_data d2 = {
+      .bmc = &temp3,
+      .smt_conv=smt_conv2,
+      .eq = eq3,
+      .result=smt_convt::resultt::P_ERROR,
+      .done=false 
+    };
+    (void) pthread_create(&tid3, NULL, call_solve, (void *)&d2);
+
+    pthread_cond_wait(&solve_condition, &mutex);
+    
+    if(d1.done){
+      msg.debug("Solver " + smt_conv1->solver_text()+ " has finished");
+      smt_conv2->set_interupt(true);
+      msg.debug("Killing solver " + smt_conv2->solver_text());
+      while(!smt_conv2->interupt_finished()){}
+
+      last_winner = smt_conv1->raw_solver_text();
+      runtime_solver = smt_conv1;
+      eq = eq1;
+      dec_result = d1.result;
+    }
+    else if(d2.done){
+      msg.debug("Solver " + smt_conv2->solver_text()+ " has finished");
+      smt_conv1->set_interupt(true);
+      msg.debug("Killing solver: " + smt_conv1->solver_text());
+      while(!smt_conv1->interupt_finished()){}
+
+      last_winner = smt_conv2->raw_solver_text();
+      runtime_solver = smt_conv2;
+      eq = eq2;
+      dec_result = d2.result;
+    }
+    else{
+      msg.error("Somehow the wait condition was triggered without either solver being done");
+      abort();
+    }
+    msg.debug("JOINING THREADS");
+    (void) pthread_join(tid1, NULL);
+    (void) pthread_join(tid3, NULL);
+    smt_conv1->set_interupt(false);
+    smt_conv2->set_interupt(false);
+  }
+  model.set_terminate(false);
+
+  return dec_result;
+}
+
+smt_convt::resultt bmct::run_top_k_decision_procedure(
+  std::shared_ptr<smt_convt> &smt_conv1,
+  std::shared_ptr<smt_convt> &smt_conv2,
+  std::shared_ptr<symex_target_equationt> &eq,
+  gat &model)
+{
+  std::string logic;
+
+  if(!options.get_bool_option("int-encoding"))
+  {
+    logic = "bit-vector";
+    logic += (!config.ansi_c.use_fixed_for_float) ? "/floating-point " : " ";
+    logic += "arithmetic";
+  }
+  else
+    logic = "integer/real arithmetic";
+  
+  auto eq1 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
+  auto eq2 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
+
+  std::vector<std::string> order = run_sibyl(eq, model);
+  std::string choice1 = order[0] != "mathsat" ? order[0] : order[2];
+  std::string choice2 = order[1] != "mathsat" ? order[1] : order[2];
+
+  smt_conv1 = std::shared_ptr<smt_convt>(create_solver_factory(choice1, ns, options, msg));
+  smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(choice2, ns, options, msg));
+
+  pthread_t tid1, tid2;
+  bmct temp1 = bmct(*this);
+  bmct temp2 = bmct(*this);
+  thread_data d1 = {
+    .bmc = &temp1,
+    .smt_conv=smt_conv1,
+    .eq = eq1,
+    .result=smt_convt::resultt::P_SMTLIB,
+    .done=false 
+  };
+  thread_data d2 = {
+    .bmc = &temp2,
+    .smt_conv=smt_conv2,
+    .eq = eq2,
+    .result=smt_convt::resultt::P_SMTLIB,
+    .done=false 
+  };
+  assert(d1.bmc != d2.bmc);
+
+  msg.debug("Starting threads");
+  smt_conv1->set_interupt(false);
+  smt_conv2->set_interupt(false);
+  assert(!smt_conv1->interupt_finished());
+  (void) pthread_create(&tid1, NULL, call_solve, (void *)&d1);
+  (void) pthread_create(&tid2, NULL, call_solve, (void *)&d2);
+
+  msg.debug("Waiting on threads");
+
+  pthread_cond_wait(&solve_condition, &mutex);
+
+  msg.debug("Joining threads");
+
+  smt_convt::resultt dec_result;
+
+  if(d1.done){
+    msg.status("Solver " + smt_conv1->solver_text()+ " has finished");
+    smt_conv2->set_interupt(true);
+    msg.debug("Killing solver " + smt_conv2->solver_text());
+    while(!smt_conv2->interupt_finished()){}
+
+    last_winner = smt_conv1->raw_solver_text();
+    runtime_solver = smt_conv1;
+    eq = eq1;
+    dec_result = d1.result;
+  }
+  else if(d2.done){
+    msg.status("Solver " + smt_conv2->solver_text()+ " has finished");
+    smt_conv1->set_interupt(true);
+    msg.debug("Killing solver: " + smt_conv1->solver_text());
+    while(!smt_conv1->interupt_finished()){}
+
+    last_winner = smt_conv2->raw_solver_text();
+    runtime_solver = smt_conv2;
+    eq = eq2;
+    dec_result = d2.result;
+  }
+  else{
+    msg.error("Somehow the wait condition was triggered without either solver being done");
+    abort();
+  }
+
+  msg.debug("JOINING THREADS");
+  (void) pthread_join(tid1, NULL);
+  (void) pthread_join(tid2, NULL);
+  smt_conv1->set_interupt(false);
+  smt_conv2->set_interupt(false);
 
   return dec_result;
 }
@@ -555,6 +865,39 @@ void bmct::bidirectional_search(
   }
 }
 
+std::vector<std::string> bmct::run_sibyl(std::shared_ptr<symex_target_equationt> &eq, gat &model){
+  msg.debug("Starting Sibyl");
+  fine_timet prediction_start = current_time();
+
+  std::vector<std::string> vals;
+  prediction_solver = std::shared_ptr<smt_convt>(create_solver_factory("sibyl", ns, options, msg));
+  run_decision_procedure(prediction_solver, eq);
+
+  sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
+
+  if (model.is_loaded()){
+    msg.debug("The model is loaded");
+    vals = model.predict(sibyl_solver->nodes, sibyl_solver->inEdges, sibyl_solver->outEdges, sibyl_solver->edge_attr);
+  }
+  else{
+    msg.error("Model is not loaded");
+    abort();
+  }
+
+  fine_timet prediction_stop = current_time();
+
+  {
+    std::ostringstream str;
+    str << "Prediction time: ";
+    output_time(prediction_stop - prediction_start, str);
+    str << "s\n";
+    str << "Order ";
+    str << vals[0] <<"," << vals[1] <<"," << vals[2] <<"," << vals[3] <<"," << vals[4] <<","<< vals[5];
+    msg.status(str.str());
+  }
+  return vals;
+}
+
 smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq, gat &model)
 {
   std::shared_ptr<goto_symext::symex_resultt> result;
@@ -600,7 +943,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
     output_time(symex_stop - symex_start, str);
     str << "s";
     str << " (" << eq->SSA_steps.size() << " assignments)";
-    msg.status(str.str());
+    msg.debug(str.str());
   }
 
   if(options.get_bool_option("double-assign-check"))
@@ -622,7 +965,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
       output_time(slice_stop - slice_start, str);
       str << "s";
       str << " (removed " << ignored << " assignments)";
-      msg.status(str.str());
+      msg.debug(str.str());
     }
 
     if(
@@ -638,7 +981,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
       str << "Generated " << result->total_claims << " VCC(s), ";
       str << result->remaining_claims << " remaining after simplification ";
       str << "(" << BigInt(eq->SSA_steps.size()) - ignored << " assignments)";
-      msg.status(str.str());
+      msg.debug(str.str());
     }
 
     if(options.get_bool_option("document-subgoals"))
@@ -669,49 +1012,48 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
     }
 
     std::string choice = "";
-    if(use_sibyl){
-      fine_timet prediction_start = current_time();
-
-      prediction_solver = std::shared_ptr<smt_convt>(create_solver_factory("sibyl", ns, options, msg));
-      run_decision_procedure(prediction_solver, eq);
-
-      sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
-
-      if (model.is_loaded()){
-        msg.status("The model is loaded");
-        choice = model.predict(sibyl_solver->nodes, sibyl_solver->inEdges, sibyl_solver->outEdges, sibyl_solver->edge_attr);
-      }
-      else{
-        msg.error("Model is not loaded");
-        abort();
-      }
-
-      fine_timet prediction_stop = current_time();
-
-      {
-        std::ostringstream str;
-        str << "Prediction time: ";
-        output_time(prediction_stop - prediction_start, str);
-        str << "s\n";
-        str << "Choice ";
-        str << choice;
-        msg.status(str.str());
-      }
-    }
-
     if(!options.get_bool_option("smt-during-symex"))
     {
-      if(use_sibyl && !options.get_bool_option("predict-only")){
-        runtime_solver =
-        std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
-      }
-      else{
-        runtime_solver =
-        std::shared_ptr<smt_convt>(create_solver_factory("", ns, options, msg));
+      if(use_sibyl && !options.get_bool_option("parallel-solve")){
+        if(options.get_bool_option("predict-only")){
+          run_sibyl(eq, model);
+        }
+        else{
+          choice = run_sibyl(eq, model)[0];
+        }
       }
     }
-    
-    return run_decision_procedure(runtime_solver, eq);
+
+    smt_convt::resultt res;
+
+    if(options.get_bool_option("parallel-solve")){
+      std::string strategy = options.get_option("parallel-strategy");
+      fine_timet start = current_time();
+      if(strategy == "last-winner"){
+        res = run_parallel_last_winner_decision_procedure(solver1, solver2, eq, model);
+      }
+      else if(strategy == "constant"){
+
+      }
+      else if(strategy == "top-k"){
+        res = run_top_k_decision_procedure(solver1, solver2, eq, model);
+      }
+      else{
+        msg.error(strategy + " is not a viable choice. Options include last-winner, constant, or top-k");
+        abort();
+      }
+      fine_timet end = current_time();
+      solve_time = solve_time + (end-start);
+    }
+    else{
+      if(options.get_bool_option("predict-only")){
+        choice = "";
+      }
+      runtime_solver = std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
+      res = run_decision_procedure(runtime_solver, eq);
+    }
+
+    return res;
   }
 
   catch(std::string &error_str)
@@ -731,4 +1073,8 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
     msg.error("Out of memory\n");
     return smt_convt::P_ERROR;
   }
+}
+
+fine_timet bmct::get_solve_time(){
+  return solve_time;
 }

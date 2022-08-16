@@ -33,6 +33,10 @@ public:
   void pop_ctx() override;
   resultt dec_solve() override;
   const std::string solver_text() override;
+  const std::string raw_solver_text() override
+  {
+    return "boolector";
+  }
 
   void assert_ast(smt_astt a) override;
 
@@ -106,9 +110,12 @@ public:
 
   void dump_smt() override;
   void print_model() override;
+  void set_interupt(bool val) override;
+  bool interupt_finished() override;
 
   // Members
   Bitwuzla *bitw;
+  bool terminate = false;
 
   typedef std::unordered_map<std::string, smt_astt> symtable_type;
   symtable_type symtable;

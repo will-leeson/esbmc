@@ -1171,3 +1171,14 @@ void yices_smt_ast::dump() const
   yices_pp_type(f.file(), to_solver_smt_sort<type_t>(sort)->s, 80, 10, 0);
   msg.insert_file_contents(VerbosityLevel::Debug, f.file());
 }
+
+void yices_convt::set_interupt(bool val) {
+  if(val){
+    yices_stop_search(yices_ctx);  
+  }
+  terminate = val;
+}
+
+bool yices_convt::interupt_finished() {
+  return terminate;
+}

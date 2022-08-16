@@ -1297,6 +1297,17 @@ void z3_convt::dump_smt()
   }
 }
 
+void z3_convt::set_interupt(bool val) {
+  if(val){
+    Z3_interrupt(solver.ctx());
+  }
+  terminate = val;
+}
+
+bool z3_convt::interupt_finished() {
+  return terminate;
+}
+
 void z3_convt::print_smt_formulae(std::ostream &dest)
 {
   Z3_ast_vector __z3_assertions = Z3_solver_get_assertions(z3_ctx, solver);
