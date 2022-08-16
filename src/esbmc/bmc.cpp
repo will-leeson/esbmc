@@ -201,7 +201,7 @@ smt_convt::resultt bmct::run_decision_procedure(
   else
     logic = "integer/real arithmetic";
 
-  msg.status(fmt::format("Encoding remaining VCC(s) using {}", logic));
+  msg.debug(fmt::format("Encoding remaining VCC(s) using {}", logic));
 
   fine_timet encode_start = current_time();
   do_cbmc(smt_conv, eq);
@@ -211,7 +211,7 @@ smt_convt::resultt bmct::run_decision_procedure(
   str << "Encoding to solver time: ";
   output_time(encode_stop - encode_start, str);
   str << "s";
-  msg.status(str.str());
+  msg.debug(str.str());
 
   if(
     options.get_bool_option("smt-formula-too") ||
@@ -322,7 +322,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
     .done = false
   };
 
-  msg.status("Starting threads");
+  msg.debug("Starting threads");
   smt_conv1->set_interupt(false);
   model.set_terminate(false);
 
@@ -339,7 +339,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
     eq = eq1;
     dec_result = d1.result;
 
-    msg.status("JOINING THREADS");
+    msg.debug("JOINING THREADS");
     (void) pthread_join(tid1, NULL);
     (void) pthread_join(tid2, NULL);
   }
@@ -397,7 +397,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
       msg.error("Somehow the wait condition was triggered without either solver being done");
       abort();
     }
-    msg.status("JOINING THREADS");
+    msg.debug("JOINING THREADS");
     (void) pthread_join(tid1, NULL);
     (void) pthread_join(tid3, NULL);
     smt_conv1->set_interupt(false);
@@ -454,25 +454,25 @@ smt_convt::resultt bmct::run_top_k_decision_procedure(
   };
   assert(d1.bmc != d2.bmc);
 
-  msg.status("Starting threads");
+  msg.debug("Starting threads");
   smt_conv1->set_interupt(false);
   smt_conv2->set_interupt(false);
   assert(!smt_conv1->interupt_finished());
   (void) pthread_create(&tid1, NULL, call_solve, (void *)&d1);
   (void) pthread_create(&tid2, NULL, call_solve, (void *)&d2);
 
-  msg.status("Waiting on threads");
+  msg.debug("Waiting on threads");
 
   pthread_cond_wait(&solve_condition, &mutex);
 
-  msg.status("Joining threads");
+  msg.debug("Joining threads");
 
   smt_convt::resultt dec_result;
 
   if(d1.done){
     msg.status("Solver " + smt_conv1->solver_text()+ " has finished");
     smt_conv2->set_interupt(true);
-    msg.status("Killing solver " + smt_conv2->solver_text());
+    msg.debug("Killing solver " + smt_conv2->solver_text());
     while(!smt_conv2->interupt_finished()){}
 
     last_winner = smt_conv1->raw_solver_text();
@@ -483,7 +483,7 @@ smt_convt::resultt bmct::run_top_k_decision_procedure(
   else if(d2.done){
     msg.status("Solver " + smt_conv2->solver_text()+ " has finished");
     smt_conv1->set_interupt(true);
-    msg.status("Killing solver: " + smt_conv1->solver_text());
+    msg.debug("Killing solver: " + smt_conv1->solver_text());
     while(!smt_conv1->interupt_finished()){}
 
     last_winner = smt_conv2->raw_solver_text();
@@ -496,7 +496,7 @@ smt_convt::resultt bmct::run_top_k_decision_procedure(
     abort();
   }
 
-  msg.status("JOINING THREADS");
+  msg.debug("JOINING THREADS");
   (void) pthread_join(tid1, NULL);
   (void) pthread_join(tid2, NULL);
   smt_conv1->set_interupt(false);
@@ -866,7 +866,7 @@ void bmct::bidirectional_search(
 }
 
 std::vector<std::string> bmct::run_sibyl(std::shared_ptr<symex_target_equationt> &eq, gat &model){
-  msg.status("Starting Sibyl");
+  msg.debug("Starting Sibyl");
   fine_timet prediction_start = current_time();
 
   std::vector<std::string> vals;
@@ -876,7 +876,7 @@ std::vector<std::string> bmct::run_sibyl(std::shared_ptr<symex_target_equationt>
   sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
   if (model.is_loaded()){
-    msg.status("The model is loaded");
+    msg.debug("The model is loaded");
     vals = model.predict(sibyl_solver->nodes, sibyl_solver->inEdges, sibyl_solver->outEdges, sibyl_solver->edge_attr);
   }
   else{
@@ -943,7 +943,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
     output_time(symex_stop - symex_start, str);
     str << "s";
     str << " (" << eq->SSA_steps.size() << " assignments)";
-    msg.status(str.str());
+    msg.debug(str.str());
   }
 
   if(options.get_bool_option("double-assign-check"))
@@ -965,7 +965,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
       output_time(slice_stop - slice_start, str);
       str << "s";
       str << " (removed " << ignored << " assignments)";
-      msg.status(str.str());
+      msg.debug(str.str());
     }
 
     if(
@@ -981,7 +981,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
       str << "Generated " << result->total_claims << " VCC(s), ";
       str << result->remaining_claims << " remaining after simplification ";
       str << "(" << BigInt(eq->SSA_steps.size()) - ignored << " assignments)";
-      msg.status(str.str());
+      msg.debug(str.str());
     }
 
     if(options.get_bool_option("document-subgoals"))

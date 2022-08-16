@@ -876,7 +876,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model, std::string *last_
       }
       bmc.options.set_option("unwind", integer2string(k_step));
 
-      msg.status(fmt::format("*** Checking base case, k = {:d}\n", k_step));
+      msg.debug(fmt::format("*** Checking base case, k = {:d}\n", k_step));
 
       // If an exception was thrown, we should abort the process
       int res = smt_convt::P_ERROR;
@@ -985,7 +985,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model, std::string *last_
       }
       bmc.options.set_option("unwind", integer2string(k_step));
 
-      msg.status(
+      msg.debug(
         fmt::format("*** Checking forward condition, k = {:d}", k_step));
 
       // If an exception was thrown, we should abort the process
@@ -1058,7 +1058,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel(gat model, std::string *last_
 
       bmc.options.set_option("unwind", integer2string(k_step));
 
-      msg.status(fmt::format("*** Checking inductive step, k = {:d}", k_step));
+      msg.debug(fmt::format("*** Checking inductive step, k = {:d}", k_step));
 
       // If an exception was thrown, we should abort the process
       int res = smt_convt::P_ERROR;
@@ -1298,7 +1298,7 @@ int esbmc_parseoptionst::do_base_case(
 
   bmc.options.set_option("unwind", integer2string(k_step));
 
-  msg.status(fmt::format("*** Checking base case, k = {:d}", k_step));
+  msg.debug(fmt::format("*** Checking base case, k = {:d}", k_step));
   switch(do_bmc(bmc, model))
   {
   case smt_convt::P_UNSATISFIABLE:
@@ -1353,7 +1353,7 @@ int esbmc_parseoptionst::do_forward_condition(
 
   bmc.options.set_option("unwind", integer2string(k_step));
 
-  msg.status(fmt::format("*** Checking forward condition, k = {:d}", k_step));
+  msg.debug(fmt::format("*** Checking forward condition, k = {:d}", k_step));
   auto res = do_bmc(bmc, model);
 
   // Restore the no assertion flag, before checking the other steps
@@ -1415,7 +1415,7 @@ int esbmc_parseoptionst::do_inductive_step(
   }
   bmc.options.set_option("unwind", integer2string(k_step));
 
-  msg.status(fmt::format("*** Checking inductive step, k = {:d}", k_step));
+  msg.debug(fmt::format("*** Checking inductive step, k = {:d}", k_step));
   switch(do_bmc(bmc, model))
   {
   case smt_convt::P_SATISFIABLE:
