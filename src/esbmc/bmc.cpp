@@ -203,6 +203,7 @@ smt_convt::resultt bmct::run_decision_procedure(
 
   msg.debug(fmt::format("Encoding remaining VCC(s) using {}", logic));
 
+  smt_conv->set_interupt(false);
   fine_timet encode_start = current_time();
   do_cbmc(smt_conv, eq);
   fine_timet encode_stop = current_time();
@@ -236,6 +237,8 @@ smt_convt::resultt bmct::run_decision_procedure(
   output_time(sat_stop - sat_start, str);
   str << "s";
   msg.status(str.str());
+
+  report_result(dec_result);
 
   return dec_result;
 }
