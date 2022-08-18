@@ -55,8 +55,15 @@ public:
     std::shared_ptr<symex_target_equationt> &eq,
     gat &model
   );
+  
+  virtual smt_convt::resultt run_static_parallel_decision_procedure(
+    std::shared_ptr<smt_convt> &smt_conv1,
+    std::shared_ptr<smt_convt> &smt_conv2,
+    std::shared_ptr<symex_target_equationt> &eq,
+    gat &model
+  );
 
-  virtual smt_convt::resultt run_parallel_last_winner_decision_procedure(
+  virtual smt_convt::resultt run_prediction_with_choice_decision_procedure(
     std::shared_ptr<smt_convt> &smt_conv1,
     std::shared_ptr<smt_convt> &smt_conv2,
     std::shared_ptr<symex_target_equationt> &eq,
@@ -69,6 +76,8 @@ public:
   
   std::vector<std::string> run_sibyl(std::shared_ptr<symex_target_equationt> &eq, gat &model);
   fine_timet get_solve_time();
+
+  std::vector<std::string> choose_parallel_solvers();
 
 protected:
   const contextt &context;

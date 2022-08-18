@@ -238,8 +238,6 @@ smt_convt::resultt bmct::run_decision_procedure(
   str << "s";
   msg.status(str.str());
 
-  report_result(dec_result);
-
   return dec_result;
 }
 
@@ -291,7 +289,7 @@ void * call_predict(void *pdata){
   pthread_exit(NULL);
 }
 
-smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
+smt_convt::resultt bmct::run_prediction_with_choice_decision_procedure(
   std::shared_ptr<smt_convt> &smt_conv1,
   std::shared_ptr<smt_convt> &smt_conv2,
   std::shared_ptr<symex_target_equationt> &eq,
@@ -303,7 +301,15 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
   auto eq1 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
   auto eq2 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
 
-  smt_conv1 = std::shared_ptr<smt_convt>(create_solver_factory(last_winner, ns, options, msg));
+  std::string choice = "";
+  if(options.get_option("paralle-strategy")=="last-winner"){
+    choice = last_winner;
+  }
+  else{
+    choice = choose_parallel_solvers()[0];
+  }
+  msg.status("Building solver: "+ choice);
+  smt_conv1 = std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
   prediction_solver = std::shared_ptr<smt_convt>(create_solver_factory("sibyl", ns, options, msg));
 
   pthread_t tid1, tid2, tid3;
@@ -335,7 +341,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
   pthread_cond_wait(&predict_condition, &mutex);
 
   if(d1.done){
-    msg.debug("Solver finished before prediction solver started");
+    msg.status("Solver finished before prediction solver started");
     model.set_terminate(true);
     last_winner = smt_conv1->raw_solver_text();
     runtime_solver = smt_conv1;
@@ -348,16 +354,16 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
   }
   else{
     std::string choice;
-    if(p.choices[0] != last_winner && p.choices[0] != "mathsat"){
+    if(p.choices[0] != last_winner){
       choice = p.choices[0];
     }
-    else if(p.choices[1] != last_winner && p.choices[1] != "mathsat"){
+    else if(p.choices[1] != last_winner){
       choice = p.choices[1];
     }
     else{
       choice = p.choices[2];
     }
-    msg.debug("Building choosen solver: "+ choice);
+    msg.status("Building choosen solver: "+ choice);
     smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
     msg.debug("Solver Built");
     smt_conv2->set_interupt(false);
@@ -375,7 +381,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
     pthread_cond_wait(&solve_condition, &mutex);
     
     if(d1.done){
-      msg.debug("Solver " + smt_conv1->solver_text()+ " has finished");
+      msg.status("Solver " + smt_conv1->solver_text()+ " has finished");
       smt_conv2->set_interupt(true);
       msg.debug("Killing solver " + smt_conv2->solver_text());
       while(!smt_conv2->interupt_finished()){}
@@ -386,7 +392,7 @@ smt_convt::resultt bmct::run_parallel_last_winner_decision_procedure(
       dec_result = d1.result;
     }
     else if(d2.done){
-      msg.debug("Solver " + smt_conv2->solver_text()+ " has finished");
+      msg.status("Solver " + smt_conv2->solver_text()+ " has finished");
       smt_conv1->set_interupt(true);
       msg.debug("Killing solver: " + smt_conv1->solver_text());
       while(!smt_conv1->interupt_finished()){}
@@ -432,11 +438,155 @@ smt_convt::resultt bmct::run_top_k_decision_procedure(
   auto eq2 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
 
   std::vector<std::string> order = run_sibyl(eq, model);
-  std::string choice1 = order[0] != "mathsat" ? order[0] : order[2];
-  std::string choice2 = order[1] != "mathsat" ? order[1] : order[2];
 
-  smt_conv1 = std::shared_ptr<smt_convt>(create_solver_factory(choice1, ns, options, msg));
-  smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(choice2, ns, options, msg));
+
+  smt_conv1 = std::shared_ptr<smt_convt>(create_solver_factory(order[0], ns, options, msg));
+  smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(order[1], ns, options, msg));
+
+  pthread_t tid1, tid2;
+  bmct temp1 = bmct(*this);
+  bmct temp2 = bmct(*this);
+  thread_data d1 = {
+    .bmc = &temp1,
+    .smt_conv=smt_conv1,
+    .eq = eq1,
+    .result=smt_convt::resultt::P_SMTLIB,
+    .done=false 
+  };
+  thread_data d2 = {
+    .bmc = &temp2,
+    .smt_conv=smt_conv2,
+    .eq = eq2,
+    .result=smt_convt::resultt::P_SMTLIB,
+    .done=false 
+  };
+  assert(d1.bmc != d2.bmc);
+
+  msg.debug("Starting threads");
+  smt_conv1->set_interupt(false);
+  smt_conv2->set_interupt(false);
+  assert(!smt_conv1->interupt_finished());
+  (void) pthread_create(&tid1, NULL, call_solve, (void *)&d1);
+  (void) pthread_create(&tid2, NULL, call_solve, (void *)&d2);
+
+  msg.debug("Waiting on threads");
+
+  pthread_cond_wait(&solve_condition, &mutex);
+
+  msg.debug("Joining threads");
+
+  smt_convt::resultt dec_result;
+
+  if(d1.done){
+    msg.status("Solver " + smt_conv1->solver_text()+ " has finished");
+    smt_conv2->set_interupt(true);
+    msg.debug("Killing solver " + smt_conv2->solver_text());
+    while(!smt_conv2->interupt_finished()){}
+
+    last_winner = smt_conv1->raw_solver_text();
+    runtime_solver = smt_conv1;
+    eq = eq1;
+    dec_result = d1.result;
+  }
+  else if(d2.done){
+    msg.status("Solver " + smt_conv2->solver_text()+ " has finished");
+    smt_conv1->set_interupt(true);
+    msg.debug("Killing solver: " + smt_conv1->solver_text());
+    while(!smt_conv1->interupt_finished()){}
+
+    last_winner = smt_conv2->raw_solver_text();
+    runtime_solver = smt_conv2;
+    eq = eq2;
+    dec_result = d2.result;
+  }
+  else{
+    msg.error("Somehow the wait condition was triggered without either solver being done");
+    abort();
+  }
+
+  msg.debug("JOINING THREADS");
+  (void) pthread_join(tid1, NULL);
+  (void) pthread_join(tid2, NULL);
+  smt_conv1->set_interupt(false);
+  smt_conv2->set_interupt(false);
+
+  return dec_result;
+}
+
+std::vector<std::string> bmct::choose_parallel_solvers(){
+  std::vector<std::string> choices;
+  const std::string esbmc_solvers[] = {
+  #ifdef BOOLECTOR
+    "boolector",s
+  #endif
+  #ifdef BITWUZLA
+    "bitwuzla",
+  #endif
+  #ifdef USECVC
+    "cvc",
+  #endif
+  #ifdef MATHSAT
+    "mathsat",
+  #endif
+    #ifdef MINISAT
+    "minisat",
+  #endif
+  #ifdef YICES
+    "yices",
+  #endif
+  #ifdef Z3
+    "z3",
+  #endif
+  };
+  for(std::string solver : esbmc_solvers){
+    if(options.get_bool_option(solver)){
+      choices.push_back(solver);
+    }
+  }
+  if(choices.size()>2){
+    msg.status("You have selected more than two solvers. We will use the first two alphabetically.");
+  }
+  else if(choices.size()==0){
+    msg.status("You have selected less no solvers. We will use the default choices.");
+    choices.push_back("bitwuzla");
+    choices.push_back("yices");
+  }
+  else if(choices.size()==1){
+    msg.status("You have selected less no solvers. We will use the default choices.");
+    if(choices[0]=="bitwuzla"){
+      choices.push_back("yices");
+    }
+    else{
+      choices.push_back("bitwuzla");
+    }
+  }
+  return choices;
+}
+
+smt_convt::resultt bmct::run_static_parallel_decision_procedure(
+  std::shared_ptr<smt_convt> &smt_conv1,
+  std::shared_ptr<smt_convt> &smt_conv2,
+  std::shared_ptr<symex_target_equationt> &eq,
+  gat &model)
+{
+  std::string logic;
+
+  if(!options.get_bool_option("int-encoding"))
+  {
+    logic = "bit-vector";
+    logic += (!config.ansi_c.use_fixed_for_float) ? "/floating-point " : " ";
+    logic += "arithmetic";
+  }
+  else
+    logic = "integer/real arithmetic";
+  
+  auto eq1 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
+  auto eq2 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
+
+  std::vector<std::string> choices = choose_parallel_solvers();
+
+  smt_conv1 = std::shared_ptr<smt_convt>(create_solver_factory(choices[0], ns, options, msg));
+  smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(choices[1], ns, options, msg));
 
   pthread_t tid1, tid2;
   bmct temp1 = bmct(*this);
@@ -1032,11 +1182,11 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
     if(options.get_bool_option("parallel-solve")){
       std::string strategy = options.get_option("parallel-strategy");
       fine_timet start = current_time();
-      if(strategy == "last-winner"){
-        res = run_parallel_last_winner_decision_procedure(solver1, solver2, eq, model);
+      if(strategy == "last-winner" || strategy == "with-default"){
+        res = run_prediction_with_choice_decision_procedure(solver1, solver2, eq, model);
       }
       else if(strategy == "constant"){
-
+        res = run_static_parallel_decision_procedure(solver1, solver2, eq, model);
       }
       else if(strategy == "top-k"){
         res = run_top_k_decision_procedure(solver1, solver2, eq, model);

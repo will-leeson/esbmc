@@ -420,7 +420,6 @@ void esbmc_parseoptionst::get_command_line_options(optionst &options)
 int esbmc_parseoptionst::doit()
 {
   // Configure msg output
-
   if(cmdline.isset("file-output"))
   {
     FILE *f = fopen(cmdline.getval("file-output"), "w+");
