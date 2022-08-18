@@ -46,8 +46,6 @@ ENV CXX=/home/esbmc-project/clang11/bin/clang++
 
 RUN cd /home/esbmc-project/esbmc && mkdir build && cd build && cmake .. -GNinja -DClang_DIR=/home/esbmc-project/clang11 -DLLVM_DIR=/home/esbmc-project/clang11 -DBoolector_DIR=/home/esbmc-project/boolector-release -DZ3_DIR=/home/esbmc-project/z3 -DENABLE_MATHSAT=ON -DMathsat_DIR=/home/esbmc-project/mathsat -DENABLE_YICES=On -DYices_DIR=/home/esbmc-project/yices -DCVC4_DIR=/home/esbmc-project/cvc4 -DBitwuzla_DIR=/home/esbmc-project/bitwuzla-release -DTorch_DIR=/home/esbmc-project/libtorch/share/cmake/Torch/ && ninja install
 
-RUN git clone https://gitlab.com/sosy-lab/benchmarking/sv-benchmarks.git --branch=svcomp22 /home/esbmc-project/sv-benchmarks
-
 ENV LD_LIBRARY_PATH=":/usr/local/lib/:/home/esbmc-project/libtorch/lib/:/home/esbmc-project/z3/bin/:/home/esbmc-project/mathsat/lib/:/home/esbmc-project/yices/lib/"
 
 WORKDIR /home

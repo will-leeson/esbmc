@@ -212,7 +212,7 @@ smt_astt smt_convt::invert_ast(smt_astt a)
 
 smt_astt smt_convt::imply_ast(smt_astt a, smt_astt b)
 {
-  assert(a->sort->id == SMT_SORT_BOOL && b->sort->id == SMT_SORT_BOOL);
+  assert((a->sort->id == SMT_SORT_BOOL && b->sort->id == SMT_SORT_BOOL) || (solver_text() =="Sibyl"));
   return mk_implies(a, b);
 }
 
@@ -1699,7 +1699,7 @@ smt_astt smt_convt::make_bit_bool(smt_astt a)
 {
   assert(
     ((!int_encoding && a->sort->id == SMT_SORT_BV) ||
-     (int_encoding && a->sort->id == SMT_SORT_INT)) &&
+     (int_encoding && a->sort->id == SMT_SORT_INT)) || (solver_text() == "Sibyl")  &&
     "Wrong sort fed to smt_convt::make_bit_bool");
 
   smt_astt one =

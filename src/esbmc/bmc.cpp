@@ -296,6 +296,16 @@ smt_convt::resultt bmct::run_prediction_with_choice_decision_procedure(
   gat &model
 )
 {
+  std::string logic;
+  if(!options.get_bool_option("int-encoding"))
+  {
+    logic = "bit-vector";
+    logic += (!config.ansi_c.use_fixed_for_float) ? "/floating-point " : " ";
+    logic += "arithmetic";
+  }
+  else
+    logic = "integer/real arithmetic";
+
   smt_convt::resultt dec_result;
 
   auto eq1 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));

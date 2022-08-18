@@ -1,0 +1,13 @@
+.git/
+.git/**
+docs/
+docs/**
+scripts/
+scripts/**
+regression/
+regression/**
+unit/
+unit/**
+build/
+build/**
+*.sif
