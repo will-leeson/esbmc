@@ -547,12 +547,12 @@ std::vector<std::string> bmct::choose_parallel_solvers(){
     msg.status("You have selected more than two solvers. We will use the first two alphabetically.");
   }
   else if(choices.size()==0){
-    msg.status("You have selected less no solvers. We will use the default choices.");
+    msg.status("You have selected no solvers. We will use the default choices.");
     choices.push_back("bitwuzla");
     choices.push_back("yices");
   }
   else if(choices.size()==1){
-    msg.status("You have selected less no solvers. We will use the default choices.");
+    msg.status("You have selected less one solver. We will use the default choice for the second.");
     if(choices[0]=="bitwuzla"){
       choices.push_back("yices");
     }
@@ -1192,7 +1192,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
         res = run_top_k_decision_procedure(solver1, solver2, eq, model);
       }
       else{
-        msg.error(strategy + " is not a viable choice. Options include last-winner, constant, or top-k");
+        msg.error(strategy + " is not a viable choice. Options include last-winner, constant, with-default, or top-k");
         abort();
       }
       fine_timet end = current_time();

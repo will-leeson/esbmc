@@ -170,7 +170,7 @@ const struct group_opt_templ all_cmd_options[] = {
     {"predict-only", NULL, "Just predict with Sibyl"},
     {"parallel-solve", NULL, "Allow two solvers to run in parallel"},
     {"parallel-strategy",boost::program_options::value<std::string>(),
-     "stratgeies [last-winner, constant, top-2]"},
+     "stratgeies [last-winner, constant, top-2, with-default]"},
     {"boolector", NULL, "use Boolector (default),"},
     {"z3", NULL, "use Z3"},
     {"mathsat", NULL, "use MathSAT"},
