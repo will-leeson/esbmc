@@ -525,7 +525,7 @@ std::vector<std::string> bmct::choose_parallel_solvers(){
   std::vector<std::string> choices;
   const std::string esbmc_solvers[] = {
   #ifdef BOOLECTOR
-    "boolector",s
+    "boolector",
   #endif
   #ifdef BITWUZLA
     "bitwuzla",
@@ -556,16 +556,16 @@ std::vector<std::string> bmct::choose_parallel_solvers(){
   }
   else if(choices.size()==0){
     msg.status("You have selected no solvers. We will use the default choices.");
+    choices.push_back("boolector");
     choices.push_back("bitwuzla");
-    choices.push_back("yices");
   }
   else if(choices.size()==1){
     msg.status("You have selected less one solver. We will use the default choice for the second.");
-    if(choices[0]=="bitwuzla"){
-      choices.push_back("yices");
+    if(choices[0]=="boolector"){
+      choices.push_back("bitwuzla");
     }
     else{
-      choices.push_back("bitwuzla");
+      choices.push_back("boolector");
     }
   }
   return choices;
