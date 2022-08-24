@@ -48,8 +48,8 @@ smt_convt::get_member_name_field(const type2tc &t, const irep_idt &name) const
     idx++;
   }
   assert(
-    idx != data_ref.member_names.size() &&
-    "Member name of with expr not found in struct type");
+    (idx != data_ref.member_names.size() &&
+    "Member name of with expr not found in struct type"));
 
   return idx;
 }
@@ -114,19 +114,19 @@ smt_convt::smt_convt(
 
 void smt_convt::set_tuple_iface(tuple_iface *iface)
 {
-  assert(tuple_api == nullptr && "set_tuple_iface should only be called once");
+  assert((tuple_api == nullptr && "set_tuple_iface should only be called once") || (solver_text() =="Sibyl"));
   tuple_api = iface;
 }
 
 void smt_convt::set_array_iface(array_iface *iface)
 {
-  assert(array_api == nullptr && "set_array_iface should only be called once");
+  assert((array_api == nullptr && "set_array_iface should only be called once") || (solver_text() =="Sibyl"));
   array_api = iface;
 }
 
 void smt_convt::set_fp_conv(fp_convt *iface)
 {
-  assert(fp_api == NULL && "set_fp_iface should only be called once");
+  assert((fp_api == NULL && "set_fp_iface should only be called once") || (solver_text() =="Sibyl"));
   fp_api = iface;
 }
 
@@ -206,7 +206,7 @@ void smt_convt::pop_ctx()
 
 smt_astt smt_convt::invert_ast(smt_astt a)
 {
-  assert(a->sort->id == SMT_SORT_BOOL);
+  assert(a->sort->id == SMT_SORT_BOOL || (solver_text() =="Sibyl"));
   return mk_not(a);
 }
 
@@ -307,7 +307,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
       const union_type2t &ut = to_union_type(expr->type);
       unsigned c = ut.get_component_number(cu.init_field);
       /* Can only initialize unions by expressions of same type as init_field */
-      assert(src_expr->type == ut.members[c]);
+      assert(src_expr->type == ut.members[c]|| (solver_text() =="Sibyl"));
     }
 #endif
     a = convert_ast(typecast2tc(
@@ -452,7 +452,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     }
     else
     {
-      assert(is_signedbv_type(d.side_1) && is_signedbv_type(d.side_2));
+      assert((is_signedbv_type(d.side_1) && is_signedbv_type(d.side_2)) || (solver_text() =="Sibyl"));
       a = mk_bvsdiv(args[0], args[1]);
     }
     break;
@@ -467,7 +467,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     }
     else
     {
-      assert(is_floatbv_type(expr));
+      assert(is_floatbv_type(expr) || (solver_text() =="Sibyl"));
       a = fp_api->mk_smt_fpbv_add(
         convert_ast(to_ieee_add2t(expr).side_1),
         convert_ast(to_ieee_add2t(expr).side_2),
@@ -477,7 +477,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
   }
   case expr2t::ieee_sub_id:
   {
-    assert(is_floatbv_type(expr));
+    assert(is_floatbv_type(expr) || (solver_text() =="Sibyl"));
     if(int_encoding)
     {
       a = mk_sub(
@@ -495,7 +495,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
   }
   case expr2t::ieee_mul_id:
   {
-    assert(is_floatbv_type(expr));
+    assert(is_floatbv_type(expr) || (solver_text() =="Sibyl"));
     if(int_encoding)
     {
       a = mk_mul(
@@ -513,7 +513,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
   }
   case expr2t::ieee_div_id:
   {
-    assert(is_floatbv_type(expr));
+    assert(is_floatbv_type(expr) || (solver_text() =="Sibyl"));
     if(int_encoding)
     {
       a = mk_div(
@@ -531,7 +531,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
   }
   case expr2t::ieee_fma_id:
   {
-    assert(is_floatbv_type(expr));
+    assert(is_floatbv_type(expr) || (solver_text() =="Sibyl"));
     if(int_encoding)
     {
       a = mk_add(
@@ -552,7 +552,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
   }
   case expr2t::ieee_sqrt_id:
   {
-    assert(is_floatbv_type(expr));
+    assert(is_floatbv_type(expr) || (solver_text() =="Sibyl"));
     // TODO: no integer mode implementation
     a = fp_api->mk_smt_fpbv_sqrt(
       convert_ast(to_ieee_sqrt2t(expr).value),
@@ -577,7 +577,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     }
     else
     {
-      assert(is_signedbv_type(m.side_1) || is_signedbv_type(m.side_2));
+      assert((is_signedbv_type(m.side_1) || is_signedbv_type(m.side_2)) || (solver_text() =="Sibyl"));
       a = mk_bvsmod(args[0], args[1]);
     }
     break;
@@ -599,10 +599,10 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
 
 #ifndef NDEBUG
       const struct_union_data &data = get_type_def(with.type);
-      assert(idx < data.members.size() && "Out of bounds with expression");
+      assert((idx < data.members.size() && "Out of bounds with expression") || (solver_text() =="Sibyl"));
       // Base type eq examines pointer types to closely
       assert(
-        (base_type_eq(data.members[idx], with.update_value->type, ns) ||
+        (base_type_eq(data.members[idx], with.update_value->type, ns) || (solver_text() =="Sibyl") || 
          (is_pointer_type(data.members[idx]) &&
           is_pointer_type(with.update_value))) &&
         "Assigned tuple member has type mismatch");
@@ -614,7 +614,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     {
       uint64_t bits = type_byte_size_bits(expr->type).to_uint64();
       const union_type2t &tu = to_union_type(expr->type);
-      assert(is_constant_string2t(with.update_field));
+      assert(is_constant_string2t(with.update_field) || (solver_text() =="Sibyl"));
       unsigned c =
         tu.get_component_number(to_constant_string2t(with.update_field).value);
       uint64_t mem_bits = type_byte_size_bits(tu.members[c]).to_uint64();
@@ -681,10 +681,10 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
   }
   case expr2t::nearbyint_id:
   {
-    assert(is_floatbv_type(expr));
+    assert(is_floatbv_type(expr)|| (solver_text() =="Sibyl"));
     a = fp_api->mk_smt_nearbyint_from_float(
       convert_ast(to_nearbyint2t(expr).from),
-      convert_rounding_mode(to_nearbyint2t(expr).rounding_mode));
+      convert_rounding_mode(to_nearbyint2t(expr).rounding_mode) );
     break;
   }
   case expr2t::if_id:
@@ -912,7 +912,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     }
     else
     {
-      assert(is_signedbv_type(lt.side_1) && is_signedbv_type(lt.side_2));
+      assert((is_signedbv_type(lt.side_1) && is_signedbv_type(lt.side_2)) || (solver_text() =="Sibyl"));
       a = mk_bvslt(args[0], args[1]);
     }
     break;
@@ -943,7 +943,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     }
     else
     {
-      assert(is_signedbv_type(lte.side_1) && is_signedbv_type(lte.side_2));
+      assert((is_signedbv_type(lte.side_1) && is_signedbv_type(lte.side_2)) || (solver_text() =="Sibyl"));
       a = mk_bvsle(args[0], args[1]);
     }
     break;
@@ -974,7 +974,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     }
     else
     {
-      assert(is_signedbv_type(gt.side_1) && is_signedbv_type(gt.side_2));
+      assert((is_signedbv_type(gt.side_1) && is_signedbv_type(gt.side_2)) || (solver_text() =="Sibyl"));
       a = mk_bvsgt(args[0], args[1]);
     }
     break;
@@ -1005,7 +1005,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     }
     else
     {
-      assert(is_signedbv_type(gte.side_1) && is_signedbv_type(gte.side_2));
+      assert((is_signedbv_type(gte.side_1) && is_signedbv_type(gte.side_2)) || (solver_text() =="Sibyl"));
       a = mk_bvsge(args[0], args[1]);
     }
     break;
@@ -1013,8 +1013,8 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
   case expr2t::concat_id:
   {
     assert(
-      !int_encoding &&
-      "Concatenate encountered in integer mode; unimplemented (and funky)");
+      (!int_encoding  &&
+      "Concatenate encountered in integer mode; unimplemented (and funky)") || (solver_text() =="Sibyl"));
     a = mk_concat(args[0], args[1]);
     break;
   }
@@ -1025,49 +1025,49 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
   }
   case expr2t::bitand_id:
   {
-    assert(!int_encoding);
+    assert(!int_encoding || (solver_text() =="Sibyl"));
     a = mk_bvand(args[0], args[1]);
     break;
   }
   case expr2t::bitor_id:
   {
-    assert(!int_encoding);
+    assert(!int_encoding || (solver_text() =="Sibyl"));
     a = mk_bvor(args[0], args[1]);
     break;
   }
   case expr2t::bitxor_id:
   {
-    assert(!int_encoding);
+    assert(!int_encoding || (solver_text() =="Sibyl"));
     a = mk_bvxor(args[0], args[1]);
     break;
   }
   case expr2t::bitnand_id:
   {
-    assert(!int_encoding);
+    assert(!int_encoding || (solver_text() =="Sibyl"));
     a = mk_bvnand(args[0], args[1]);
     break;
   }
   case expr2t::bitnor_id:
   {
-    assert(!int_encoding);
+    assert(!int_encoding || (solver_text() =="Sibyl"));
     a = mk_bvnor(args[0], args[1]);
     break;
   }
   case expr2t::bitnxor_id:
   {
-    assert(!int_encoding);
+    assert(!int_encoding || (solver_text() =="Sibyl"));
     a = mk_bvnxor(args[0], args[1]);
     break;
   }
   case expr2t::bitnot_id:
   {
-    assert(!int_encoding);
+    assert(!int_encoding || (solver_text() =="Sibyl"));
     a = mk_bvnot(args[0]);
     break;
   }
   case expr2t::not_id:
   {
-    assert(is_bool_type(expr));
+    assert(is_bool_type(expr) || (solver_text() =="Sibyl"));
     a = mk_not(args[0]);
     break;
   }
@@ -1297,10 +1297,10 @@ smt_astt smt_convt::convert_terminal(const expr2tc &expr)
       return mk_smt_real(result);
     }
 
-    assert(
+    assert((
       thereal.type->get_width() <= 64 &&
       "Converting fixedbv constant to"
-      " SMT, too large to fit into a uint64_t");
+      " SMT, too large to fit into a uint64_t") || (solver_text() =="Sibyl"));
 
     uint64_t magnitude, fraction, fin;
     unsigned int bitwidth = thereal.type->get_width();
@@ -1406,9 +1406,9 @@ smt_astt smt_convt::mk_fresh(
 
   if(s->id == SMT_SORT_ARRAY)
   {
-    assert(
+    assert((
       array_subtype != nullptr &&
-      "Must call mk_fresh for arrays with a subtype");
+      "Must call mk_fresh for arrays with a subtype") || (solver_text() =="Sibyl"));
     return array_api->mk_array_symbol(newname, s, array_subtype);
   }
 
@@ -1564,7 +1564,7 @@ smt_astt smt_convt::convert_rounding_mode(const expr2tc &expr)
     return fp_api->mk_smt_fpbv_rm(rm);
   }
 
-  assert(is_symbol2t(expr));
+  assert(is_symbol2t(expr) || (solver_text() =="Sibyl"));
   // 0 is round to Nearest/even
   // 2 is round to +oo
   // 3 is round to -oo
@@ -1612,7 +1612,7 @@ smt_astt smt_convt::convert_member(const expr2tc &expr)
 
   assert(
     is_struct_type(member.source_value) ||
-    is_pointer_type(member.source_value));
+    is_pointer_type(member.source_value) || (solver_text() =="Sibyl"));
   unsigned int idx =
     get_member_name_field(member.source_value->type, member.member);
 
@@ -1685,9 +1685,9 @@ smt_astt smt_convt::round_fixedbv_to_int(
 smt_astt smt_convt::make_bool_bit(smt_astt a)
 {
   assert(
-    a->sort->id == SMT_SORT_BOOL &&
+    (a->sort->id == SMT_SORT_BOOL &&
     "Wrong sort fed to "
-    "smt_convt::make_bool_bit");
+    "smt_convt::make_bool_bit") || (solver_text() =="Sibyl"));
   smt_astt one =
     (int_encoding) ? mk_smt_int(BigInt(1)) : mk_smt_bv(BigInt(1), 1);
   smt_astt zero =
@@ -1834,7 +1834,7 @@ expr2tc smt_convt::decompose_select_chain(const expr2tc &expr, expr2tc &base)
     idx = idx->source_value;
 
     type2tc t = flatten_array_type(idx->type);
-    assert(is_array_type(t));
+    assert(is_array_type(t)|| (solver_text() =="Sibyl"));
 
     multiplications.push_back(mul2tc(
       subtype,
@@ -1843,7 +1843,7 @@ expr2tc smt_convt::decompose_select_chain(const expr2tc &expr, expr2tc &base)
   }
 
   // We should only enter this method when handling multidimensional arrays
-  assert(multiplications.size() != 1);
+  assert(multiplications.size() != 1 || (solver_text() =="Sibyl"));
 
   // Add them together
   expr2tc output = gen_additions(subtype, multiplications);
@@ -1872,7 +1872,7 @@ smt_convt::decompose_store_chain(const expr2tc &expr, expr2tc &update_val)
   // add them together in the end
   std::vector<expr2tc> multiplications;
 
-  assert(is_array_type(with->update_value));
+  assert(is_array_type(with->update_value) || (solver_text() =="Sibyl"));
   multiplications.push_back(mul2tc(
     subtype,
     typecast2tc(
@@ -1893,7 +1893,7 @@ smt_convt::decompose_store_chain(const expr2tc &expr, expr2tc &update_val)
   }
 
   // We should only enter this method when handling multidimensional arrays
-  assert(multiplications.size() != 1);
+  assert(multiplications.size() != 1 || (solver_text() =="Sibyl"));
 
   // Add them together
   expr2tc output = gen_additions(subtype, multiplications);
@@ -1954,7 +1954,7 @@ smt_astt smt_convt::convert_array_store(const expr2tc &expr)
     newidx = fix_array_idx(with.update_field, with.type);
   }
 
-  assert(is_array_type(expr->type));
+  assert(is_array_type(expr->type) || (solver_text() =="Sibyl"));
   smt_astt src, update;
   const array_type2t &arrtype = to_array_type(expr->type);
 
@@ -1988,7 +1988,7 @@ type2tc smt_convt::flatten_array_type(const type2tc &type)
     return type;
 
   type2tc subtype = get_flattened_array_subtype(type);
-  assert(is_array_type(to_array_type(type).subtype));
+  assert(is_array_type(to_array_type(type).subtype) || (solver_text() =="Sibyl"));
 
   type2tc type_rec = type;
   expr2tc arr_size1 = to_array_type(type_rec).array_size;
@@ -2015,7 +2015,7 @@ type2tc smt_convt::flatten_array_type(const type2tc &type)
 
 expr2tc smt_convt::flatten_array_body(const expr2tc &expr)
 {
-  assert(is_constant_array2t(expr));
+  assert(is_constant_array2t(expr) || (solver_text() =="Sibyl"));
   const constant_array2t &the_array = to_constant_array2t(expr);
   const array_type2t &arr_type = to_array_type(the_array.type);
 
@@ -2029,9 +2029,9 @@ expr2tc smt_convt::flatten_array_body(const expr2tc &expr)
     // Must only contain constant arrays, for now. No indirection should be
     // expressable at this level.
     assert(
-      is_constant_array2t(elem) &&
+      (is_constant_array2t(elem) &&
       "Sub-member of constant array must be "
-      "constant array");
+      "constant array" )|| (solver_text() =="Sibyl"));
 #endif
 
   std::vector<expr2tc> sub_expr_list;
@@ -2376,7 +2376,7 @@ smt_astt smt_convt::array_create(const expr2tc &expr)
   const constant_int2t &thesize = to_constant_int2t(arr_type.array_size);
   unsigned int sz = thesize.value.to_uint64();
 
-  assert(is_constant_array2t(expr));
+  assert(is_constant_array2t(expr) || (solver_text() =="Sibyl"));
   const constant_array2t &array = to_constant_array2t(expr);
 
   // Repeatedly store things into this.
@@ -2427,15 +2427,15 @@ smt_astt smt_convt::convert_array_of_prep(const expr2tc &expr)
     else
     {
       const constant_array_of2t &arrof = to_constant_array_of2t(rec_expr);
-      assert(is_constant_array2t(arrof.initializer));
+      assert(is_constant_array2t(arrof.initializer)|| (solver_text() =="Sibyl"));
       const constant_array2t &constarray =
         to_constant_array2t(arrof.initializer);
       const array_type2t &constarray_type = to_array_type(constarray.type);
 
       // Duplicate contents repeatedly.
-      assert(
+      assert((solver_text() =="Sibyl") ||(
         is_constant_int2t(arrtype.array_size) &&
-        "Cannot have complex nondet-sized array_of initializers");
+        "Cannot have complex nondet-sized array_of initializers"));
       const BigInt &size = to_constant_int2t(arrtype.array_size).value;
 
       std::vector<expr2tc> new_contents;
@@ -2508,16 +2508,16 @@ smt_astt smt_convt::pointer_array_of(
 {
   // Actually a tuple, but the operand is going to be a symbol, null.
   assert(
-    is_symbol2t(init_val) &&
+    (is_symbol2t(init_val) &&
     "Pointer type'd array_of can only be an "
-    "array of null");
+    "array of null") || (solver_text() =="Sibyl"));
 
 #ifndef NDEBUG
   const symbol2t &sym = to_symbol2t(init_val);
   assert(
-    sym.thename == "NULL" &&
+    (sym.thename == "NULL" &&
     "Pointer type'd array_of can only be an "
-    "array of null");
+    "array of null") || (solver_text() =="Sibyl"));
 #endif
 
   // Well known value; zero and zero.
@@ -2549,7 +2549,7 @@ smt_convt::tuple_array_create_despatch(const expr2tc &expr, smt_sortt domain)
     return tuple_api->tuple_array_create(arr_type, &arg, true, domain);
   }
 
-  assert(is_constant_array2t(expr));
+  assert(is_constant_array2t(expr) || (solver_text() =="Sibyl"));
   const constant_array2t &arr = to_constant_array2t(expr);
   std::vector<smt_astt> args(arr.datatype_members.size());
   unsigned int i = 0;
@@ -2637,8 +2637,8 @@ smt_astt smt_ast::update(
 smt_astt smt_ast::select(smt_convt *ctx, const expr2tc &idx) const
 {
   assert(
-    sort->id == SMT_SORT_ARRAY &&
-    "Select operation applied to non-array scalar AST");
+    (sort->id == SMT_SORT_ARRAY &&
+    "Select operation applied to non-array scalar AST"));
 
   smt_astt args[2];
   args[0] = this;
@@ -3025,23 +3025,23 @@ smt_astt smt_convt::mk_bvslt(smt_astt a, smt_astt b)
 
 smt_astt smt_convt::mk_gt(smt_astt a, smt_astt b)
 {
-  assert(a->sort->id == SMT_SORT_INT || a->sort->id == SMT_SORT_REAL);
-  assert(b->sort->id == SMT_SORT_INT || b->sort->id == SMT_SORT_REAL);
+  assert(a->sort->id == SMT_SORT_INT || a->sort->id == SMT_SORT_REAL || (solver_text() =="Sibyl"));
+  assert(b->sort->id == SMT_SORT_INT || b->sort->id == SMT_SORT_REAL || (solver_text() =="Sibyl"));
   return mk_lt(b, a);
 }
 
 smt_astt smt_convt::mk_bvugt(smt_astt a, smt_astt b)
 {
-  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL);
-  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL);
+  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
+  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
   assert(a->sort->get_data_width() == b->sort->get_data_width());
   return mk_not(mk_bvule(a, b));
 }
 
 smt_astt smt_convt::mk_bvsgt(smt_astt a, smt_astt b)
 {
-  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL);
-  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL);
+  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
+  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
   assert(a->sort->get_data_width() == b->sort->get_data_width());
   return mk_not(mk_bvsle(a, b));
 }
@@ -3069,25 +3069,25 @@ smt_astt smt_convt::mk_bvsle(smt_astt a, smt_astt b)
 
 smt_astt smt_convt::mk_ge(smt_astt a, smt_astt b)
 {
-  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL);
-  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL);
+  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
+  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
   assert(a->sort->get_data_width() == b->sort->get_data_width());
   return mk_not(mk_lt(a, b));
 }
 
 smt_astt smt_convt::mk_bvuge(smt_astt a, smt_astt b)
 {
-  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL);
-  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL);
-  assert(a->sort->get_data_width() == b->sort->get_data_width());
+  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
+  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
+  assert(a->sort->get_data_width() == b->sort->get_data_width() || (solver_text() =="Sibyl"));
   return mk_not(mk_bvult(a, b));
 }
 
 smt_astt smt_convt::mk_bvsge(smt_astt a, smt_astt b)
 {
-  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL);
-  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL);
-  assert(a->sort->get_data_width() == b->sort->get_data_width());
+  assert(a->sort->id != SMT_SORT_INT && a->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
+  assert(b->sort->id != SMT_SORT_INT && b->sort->id != SMT_SORT_REAL || (solver_text() =="Sibyl"));
+  assert(a->sort->get_data_width() == b->sort->get_data_width() || (solver_text() =="Sibyl"));
   return mk_not(mk_bvslt(a, b));
 }
 

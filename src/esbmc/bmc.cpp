@@ -342,6 +342,7 @@ smt_convt::resultt bmct::run_prediction_with_choice_decision_procedure(
   };
 
   msg.debug("Starting threads");
+  auto currentRunning = smt_conv1->raw_solver_text();
   smt_conv1->set_interupt(false);
   model.set_terminate(false);
 
@@ -363,18 +364,15 @@ smt_convt::resultt bmct::run_prediction_with_choice_decision_procedure(
     (void) pthread_join(tid2, NULL);
   }
   else{
-    std::string choice;
-    if(p.choices[0] != last_winner){
-      choice = p.choices[0];
-    }
-    else if(p.choices[1] != last_winner){
-      choice = p.choices[1];
+    std::string choice2;
+    if(p.choices[0] != currentRunning){
+      choice2 = p.choices[0];
     }
     else{
-      choice = p.choices[2];
+      choice2 = p.choices[1];
     }
-    msg.status("Building choosen solver: "+ choice);
-    smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
+    msg.status("Building choosen solver: "+ choice2);
+    smt_conv2 = std::shared_ptr<smt_convt>(create_solver_factory(choice2, ns, options, msg));
     msg.debug("Solver Built");
     smt_conv2->set_interupt(false);
     auto eq3 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
