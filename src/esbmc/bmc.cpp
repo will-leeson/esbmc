@@ -312,7 +312,7 @@ smt_convt::resultt bmct::run_prediction_with_choice_decision_procedure(
   auto eq2 = std::shared_ptr<symex_target_equationt>(new symex_target_equationt(*eq));
 
   std::string choice = "";
-  if(options.get_option("paralle-strategy")=="last-winner"){
+  if(options.get_option("parallel-strategy")=="last-winner"){
     choice = last_winner;
   }
   else{
