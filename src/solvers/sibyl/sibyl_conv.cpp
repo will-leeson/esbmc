@@ -13,6 +13,10 @@ void sibyl_convt::insert_node(unsigned int x){
 }
 
 unsigned int sibyl_convt::emit_ast(const sibyl_smt_ast* ast){
+    set_interupt(nodes.size() > 500000 || edge_attr.size() > 1000000);
+    if(interupt_finished()){
+        return 0;
+    }
     insert_node(ast->ast_type);
     unsigned int nodeNum = numNodes++;
     for(auto arg : ast->args){
