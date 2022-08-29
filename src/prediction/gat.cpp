@@ -61,6 +61,10 @@ std::vector<std::string> gat::predict(
 
     auto batch = torch::zeros(nodeTensor.sizes()[0], opts).to(torch::kI64);
 
+    std::cout<<"Node Sizes: "<<nodeTensor.sizes()<<std::endl;
+
+    std::cout<<"Edge Sizes: "<<edgeTensor.sizes()<<std::endl;
+
     std::vector<torch::jit::IValue> inputs;
     inputs.push_back(nodeTensor);
     inputs.push_back(edgeTensor);

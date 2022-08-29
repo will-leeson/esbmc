@@ -4,7 +4,7 @@ add_library(solversibyl sibyl_conv.cpp)
 target_include_directories(solversibyl
         PRIVATE ${Boost_INCLUDE_DIRS}
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(solversibyl fmt::fmt ${GMP_LIB})
+target_link_libraries(solversibyl fmt::fmt ${GMP_LIB} TorchScatter::TorchScatter TorchSparse::TorchSparse)
 
 # Add to solver link
 target_link_libraries(solvers INTERFACE solversibyl)

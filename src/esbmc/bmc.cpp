@@ -1036,6 +1036,11 @@ std::vector<std::string> bmct::run_sibyl(std::shared_ptr<symex_target_equationt>
 
   sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt*>(prediction_solver.get());
 
+  if(sibyl_solver->interupt_finished()){
+    std::vector<std::string> last_winner_vec = {last_winner};
+    return last_winner_vec;
+  }
+
   if (model.is_loaded()){
     msg.debug("The model is loaded");
     vals = model.predict(sibyl_solver->nodes, sibyl_solver->inEdges, sibyl_solver->outEdges, sibyl_solver->edge_attr);
@@ -1210,6 +1215,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq,
       if(options.get_bool_option("predict-only")){
         choice = "";
       }
+      last_winner = choice;
       runtime_solver = std::shared_ptr<smt_convt>(create_solver_factory(choice, ns, options, msg));
       res = run_decision_procedure(runtime_solver, eq);
     }

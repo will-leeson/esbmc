@@ -17,6 +17,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/migrate.h>
 #include <util/std_expr.h>
 #include <util/message/default_message.h>
+#include <solvers/sibyl/sibyl_conv.h>
 
 void symex_target_equationt::debug_print_step(const SSA_stept &step) const
 {
@@ -145,10 +146,22 @@ void symex_target_equationt::convert(smt_convt &smt_conv)
   smt_convt::ast_vec assertions;
   smt_astt assumpt_ast = smt_conv.convert_ast(gen_true_expr());
 
-  for(auto &SSA_step : SSA_steps)
-    convert_internal_step(smt_conv, assumpt_ast, assertions, SSA_step);
+  bool breakCondition = false;
 
-  if(!assertions.empty())
+  for(auto &SSA_step : SSA_steps){
+    if(smt_conv.raw_solver_text() == "sibyl"){
+      sibyl_convt* sibyl_solver = dynamic_cast<sibyl_convt *>(&smt_conv);
+      breakCondition = sibyl_solver->interupt_finished();
+      
+      if(breakCondition){
+        msg.status("Graph too big. Breaking");
+        break;
+      }
+    }
+    convert_internal_step(smt_conv, assumpt_ast, assertions, SSA_step);
+  }
+
+  if(!assertions.empty() and !breakCondition)
     smt_conv.assert_ast(
       smt_conv.make_n_ary(&smt_conv, &smt_convt::mk_or, assertions));
 }
