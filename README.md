@@ -1,3 +1,7 @@
+# ESBMC with Sibyl Selection
+
+This is a fork of the ESBMC project which has the Sibyl algorithm selector integrated into it.
+
 # The ESBMC model checker
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/d14d06e975644907a2eb9521e09ccfe4)](https://app.codacy.com/gh/esbmc/esbmc?utm_source=github.com&utm_medium=referral&utm_content=esbmc/esbmc&utm_campaign=Badge_Grade_Dashboard)
